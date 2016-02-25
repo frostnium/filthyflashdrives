@@ -113,7 +113,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 			System.exit(1);
 		}
 		else if("slideshow".equals(arg0.getActionCommand())) {
-			client.sentence = new String(UDPClient.SSHOW);
+			client.sentence = UDPClient.SSHOW;
 			try {
 				client.send();
 				client.receive();
