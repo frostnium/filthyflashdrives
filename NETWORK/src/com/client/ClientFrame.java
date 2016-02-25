@@ -98,18 +98,20 @@ public class ClientFrame extends JFrame implements ActionListener{
 		}
 		else if("connect".equals(arg0.getActionCommand())){
 			try {
-				client.IPAddress=InetAddress.getByName(ipTextArea.getText().trim());
-			} catch (UnknownHostException e) {
+				client.IPAddress=InetAddress.getByName(ipTextArea.getText());
+				try {
+					if(client.IPAddress.isReachable(3000)){
+						ipTextArea.setBackground(Color.GREEN);
+					}else
+						ipTextArea.setBackground(Color.RED);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			catch (UnknownHostException e) {
 				ipTextArea.setBackground(Color.RED);
 			}
-			try {
-				if(client.IPAddress.isReachable(3000)){
-					ipTextArea.setBackground(Color.GREEN);
-				}else
-					ipTextArea.setBackground(Color.RED);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			
 		}
 	}
 
