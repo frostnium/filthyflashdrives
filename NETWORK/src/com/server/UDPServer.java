@@ -17,6 +17,8 @@ public class UDPServer {
 		this.receiveData = new byte[1024];
 		this.sendData = new byte[1024];
 		while(true) {
+			this.receiveData = new byte[1024];
+			this.sendData = new byte[1024];
 			this.receive();
 		}
 	}
