@@ -75,6 +75,11 @@ public class ClientFrame extends JFrame implements ActionListener{
 		exit.addActionListener(this);
 		this.getContentPane().add(exit);
 		
+		slideshow.setBounds(40, 210, 20, 20);
+		slideshow.setIcon(new ImageIcon("icons/slideshow.png"));
+		slideshow.setActionCommand("slideshow");
+		slideshow.addActionListener(this);
+		this.getContentPane().add(slideshow);
 	}
 
 	public void actionPerformed(ActionEvent arg0) {
@@ -98,6 +103,13 @@ public class ClientFrame extends JFrame implements ActionListener{
 			client.sentence = UDPClient.EXIT;
 			client.close();
 			System.exit(1);
+		}
+		else if("slideshow".equals(arg0.getActionCommand())) {
+			client.sentence = new String(UDPClient.SSHOW);
+			try {
+				client.send();
+				client.receive();
+			}catch(Exception ex){}
 		}
 		else if("connect".equals(arg0.getActionCommand())){
 			try {
