@@ -38,7 +38,7 @@ public class ServerFrame extends JFrame{
 			files = myDir.listFiles(); 
 		
 		for(int i = 0; i < files.length; i++) {
-			images.add(new ImageIcon(files[i].getPath()));
+			images.add(new ImageIcon(files[i].getPath(),files[i].getPath().substring(7)));
 		}
 		
 		for(int i = 0; i < images.size(); i++) {
