@@ -23,6 +23,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
 	private JButton connect;
+	private JLabel fileName;
 	
 	public ClientFrame() throws Exception {
 		this.client = new UDPClient();
@@ -32,6 +33,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
 		this.connect = new JButton();
+		this.fileName = new JLabel();
 		this.initComponents();
 	}
 	
@@ -40,6 +42,10 @@ public class ClientFrame extends JFrame implements ActionListener{
 		this.setBounds(0, 0, 400, 300);
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		fileName.setBounds(100, 95, 200, 20);
+		fileName.setText("FILE NAME: ");
+		this.getContentPane().add(fileName);
 		
 		ipLabel.setBounds(31, 120, 140, 10);
 		ipLabel.setText("Enter Server IP Address:");
@@ -80,8 +86,9 @@ public class ClientFrame extends JFrame implements ActionListener{
 			try {
 				client.send();
 				client.receive();
+				fileName.setText("FILE NAME: "+client.fileName);
 			}catch(Exception ex){
-				System.out.println("SERVER NOT FOUND");
+			
 			}
 		}
 		else if("prev".equals(arg0.getActionCommand())){
@@ -89,6 +96,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 			try {
 				client.send();
 				client.receive();
+				fileName.setText("FILE NAME: "+client.fileName);
 			}catch(Exception ex){}
 		}
 		else if("exit".equals(arg0.getActionCommand())){
