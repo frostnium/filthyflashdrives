@@ -13,6 +13,7 @@ public class UDPClient {
 	public String sentence;
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
+	public String fileName;
 	
 	public UDPClient() throws Exception{
 		this.sendData = new byte[1024];
@@ -31,9 +32,9 @@ public class UDPClient {
 	public void receive() throws Exception {
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);       
 		clientSocket.receive(receivePacket);       
-		String modifiedSentence = new String(receivePacket.getData());  
-		System.out.println("FROM SERVER:" + modifiedSentence);   
-
+		fileName = new String(receivePacket.getData());  
+		System.out.println("FROM SERVER: " + fileName);   
+		this.receiveData = new byte[1024];
 	}
 	
 	public void close() {
