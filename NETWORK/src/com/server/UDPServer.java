@@ -32,10 +32,10 @@ public class UDPServer {
 		this.initCommand(sentence);
 		InetAddress IPAddress = receivePacket.getAddress();                   
 		int port = receivePacket.getPort();                   
-		String capitalizedSentence = sentence.toUpperCase();                   
-		sendData = capitalizedSentence.getBytes();                   
+		String filename = frame.images.get(frame.imageIndex).toString();                   
+		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);                   		
-		serverSocket.send(sendPacket);      
+		serverSocket.send(sendPacket);   
 	}
 	
 	public void initCommand(String command) {
