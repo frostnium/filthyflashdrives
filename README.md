@@ -1,2 +1,2 @@
 # filthyflashdrives
-network MP
+NETWORK MP - Make edits on /src/ folder
