@@ -31,7 +31,6 @@ public class SlideShow implements ActionListener{
 			frame.nextImage();
 		}
 		else {
-			System.out.println("STOP DULO NA");
 			timer.stop();
 			this.isActive = false;
 		}
