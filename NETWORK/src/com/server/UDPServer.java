@@ -44,5 +44,11 @@ public class UDPServer {
 			frame.nextImage();
 		else if(command.trim().equals("prev"))
 			frame.prevImage();
+		else if(command.trim().equals("slideshow")) {
+			try {
+				frame.slideShow(100);
+			} catch (InterruptedException e) {
+			}
+		}
 	}
 }
