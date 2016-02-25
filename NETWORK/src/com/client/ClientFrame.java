@@ -20,6 +20,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 	private JButton next;
 	private JButton prev;
 	private JButton exit;
+	private JButton slideshow;
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
 	private JButton connect;
@@ -29,6 +30,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 		this.next = new JButton();
 		this.prev = new JButton();
 		this.exit = new JButton();
+		this.slideshow = new JButton();
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
 		this.connect = new JButton();
@@ -72,6 +74,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 		exit.setActionCommand("exit");
 		exit.addActionListener(this);
 		this.getContentPane().add(exit);
+		
 	}
 
 	public void actionPerformed(ActionEvent arg0) {
