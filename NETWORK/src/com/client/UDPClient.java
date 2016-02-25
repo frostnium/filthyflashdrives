@@ -7,6 +7,8 @@ public class UDPClient {
 	public static final String NEXT = "next";
 	public static final String PREV = "prev";
 	public static final String EXIT = "exit";
+	public static final String SSHOW = "slideshow";
+
 	
 	public byte[] sendData;
 	public byte[] receiveData;
