@@ -31,9 +31,9 @@ public class UDPServer {
 		InetAddress IPAddress = receivePacket.getAddress();                   
 		int port = receivePacket.getPort();                   
 		String filename = frame.images.get(frame.imageIndex).toString();                   
-		sendData = filename.getBytes();                     
+		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);                   		
-		serverSocket.send(sendPacket);      
+		serverSocket.send(sendPacket);   
 	}
 	
 	public void initCommand(String command) {
