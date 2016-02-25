@@ -9,6 +9,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import com.mp1.SlideShow;
+
 public class ServerFrame extends JFrame{
 	
 	/**
@@ -18,6 +20,7 @@ public class ServerFrame extends JFrame{
 	public ArrayList<JLabel> storedImages;
 	public ArrayList<ImageIcon> images;
 	public int imageIndex;
+	public SlideShow sshow;
 
 	public ServerFrame() {
 		this.storedImages = new ArrayList<JLabel>();
@@ -77,15 +80,10 @@ public class ServerFrame extends JFrame{
 		this.repaint();
 	}
 	
-	public void slideShow(long time) throws InterruptedException {
+	public void slideShow(int interval) {
 		this.displayImage(0);
-		Thread.sleep(time);
 		this.imageIndex = 0;
-		for(int i = 0; i < images.size(); i++) {
-			this.nextImage();
-			Thread.sleep(time);
-			this.repaint();
-		}
+		sshow = new SlideShow(this, interval);
 	}
 	
 }
