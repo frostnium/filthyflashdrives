@@ -15,8 +15,8 @@ public class ServerFrame extends JFrame{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private ArrayList<JLabel> storedImages;
-	private ArrayList<ImageIcon> images;
+	public ArrayList<JLabel> storedImages;
+	public ArrayList<ImageIcon> images;
 	public int imageIndex;
 
 	public ServerFrame() {
@@ -67,6 +67,23 @@ public class ServerFrame extends JFrame{
 			this.storedImages.get(imageIndex).setVisible(false);
 			this.imageIndex--;
 			this.storedImages.get(imageIndex).setVisible(true);
+			this.repaint();
+		}
+	}
+	
+	public void displayImage(int index) {
+		this.storedImages.get(imageIndex).setVisible(false);
+		this.storedImages.get(index).setVisible(true);
+		this.repaint();
+	}
+	
+	public void slideShow(long time) throws InterruptedException {
+		this.displayImage(0);
+		Thread.sleep(time);
+		this.imageIndex = 0;
+		for(int i = 0; i < images.size(); i++) {
+			this.nextImage();
+			Thread.sleep(time);
 			this.repaint();
 		}
 	}
