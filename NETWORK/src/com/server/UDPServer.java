@@ -40,15 +40,22 @@ public class UDPServer {
 	
 	public void initCommand(String command) {
 		System.out.println("COMMAND: "+command);
-		if(command.trim().equals("next")) 
-			frame.nextImage();
-		else if(command.trim().equals("prev"))
-			frame.prevImage();
-		else if(command.trim().equals("slideshow")) {
-			try {
-				frame.slideShow(100);
-			} catch (InterruptedException e) {
+		if(command.trim().equals("next")) {
+			if(frame.sshow != null && frame.sshow.isActive) {
+				System.out.println("STOP SS NEXT press");
+				frame.sshow.timer.stop();
 			}
+			frame.nextImage();
+		}
+		else if(command.trim().equals("prev")) {
+			if(frame.sshow != null && frame.sshow.isActive) {
+				System.out.println("STOP SS PREV press");
+				frame.sshow.timer.stop();
+			}
+			frame.prevImage();
+		}
+		else if(command.trim().equals("slideshow")) {
+			frame.slideShow(500);
 		}
 	}
 }
