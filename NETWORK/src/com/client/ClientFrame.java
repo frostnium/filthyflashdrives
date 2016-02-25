@@ -24,10 +24,10 @@ public class ClientFrame extends JFrame implements ActionListener{
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
 	private JButton connect;
-	private JLabel fileName;
+	public JLabel fileName;
 	
 	public ClientFrame() throws Exception {
-		this.client = new UDPClient();
+		this.client = new UDPClient(this);
 		this.next = new JButton();
 		this.prev = new JButton();
 		this.exit = new JButton();
@@ -94,7 +94,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 			try {
 				client.send();
 				client.receive();
-				fileName.setText("FILE NAME: "+client.fileName);
+				fileName.setText("FILE NAME: "+client.getFileName());
 			}catch(Exception ex){
 			
 			}
@@ -104,7 +104,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 			try {
 				client.send();
 				client.receive();
-				fileName.setText("FILE NAME: "+client.fileName);
+				fileName.setText("FILE NAME: "+client.getFileName());
 			}catch(Exception ex){}
 		}
 		else if("exit".equals(arg0.getActionCommand())){
@@ -113,10 +113,14 @@ public class ClientFrame extends JFrame implements ActionListener{
 			System.exit(1);
 		}
 		else if("slideshow".equals(arg0.getActionCommand())) {
+			boolean isSlideShowDone=false;
 			client.sentence = UDPClient.SSHOW;
 			try {
 				client.send();
-				client.receive();
+				while(!isSlideShowDone){
+					isSlideShowDone=client.receiveSShow();
+					repaint();
+				}
 			}catch(Exception ex){}
 		}
 		else if("connect".equals(arg0.getActionCommand())){
