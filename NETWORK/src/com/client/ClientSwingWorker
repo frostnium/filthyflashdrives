@@ -1,0 +1,25 @@
+package com.client;
+
+import javax.swing.SwingWorker;
+
+public class ClientSwingWorker extends SwingWorker<Void, Void> {
+
+	private UDPClient client;
+	
+	public ClientSwingWorker(UDPClient client){
+		this.client=client;
+	}
+	
+	@Override
+	protected Void doInBackground() throws Exception {
+		String fileName = null;
+		while(true){
+			String data=client.receive();
+			firePropertyChange("fileName", fileName, data);
+			fileName=data;
+			System.out.println("FROM SERVER: " + fileName);   
+		}
+		
+	}
+
+}
