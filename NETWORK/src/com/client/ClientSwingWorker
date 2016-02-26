@@ -13,9 +13,13 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 	@Override
 	protected Void doInBackground() throws Exception {
 		String fileName = null;
+		String ssInterval = null;
 		while(true){
 			String data=client.receive();
-			firePropertyChange("fileName", fileName, data);
+			if(data.trim().equals("RFINT"))
+				firePropertyChange("ssInterval", ssInterval, data);
+			else
+				firePropertyChange("fileName", fileName, data);
 			fileName=data;
 			System.out.println("FROM SERVER: " + fileName);   
 		}

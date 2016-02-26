@@ -37,7 +37,7 @@ public class UDPServer {
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		this.initCommand(sentence);
-		if(!sentence.equals("slideshow"))
+		if(!sentence.equals("slideshow") || !sentence.equals("exit"))
 			sendData();
 	}
 	
@@ -48,6 +48,25 @@ public class UDPServer {
 		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
 		serverSocket.send(sendPacket); 
+	}
+	
+	public int reqandgetInterval() throws IOException {
+		this.receiveData = new byte[1024];
+		this.sendData = new byte[1024];
+		
+		String message = "RFINT";
+		sendData = message.getBytes();                   
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
+		serverSocket.send(sendPacket); 
+		
+		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
+		serverSocket.receive(receivePacket);  
+		String interval = new String(receivePacket.getData()).trim();
+		
+		if(interval.equals(""))
+			return 1000;
+		else
+			return Integer.parseInt(interval);
 	}
 	
 	public void initCommand(String command) throws IOException {
@@ -67,9 +86,18 @@ public class UDPServer {
 			frame.prevImage();
 		}
 		else if(command.trim().equals("slideshow")) {
+			if(frame.getSshow() != null && frame.getSshow().timer.isRunning())
+				return;
+			int interval = this.reqandgetInterval();
 			frame.displayImage(0);
 			frame.imageIndex = 0;
-			frame.setSshow(new SlideShow(frame,2000,this));
+			this.sendData();
+			frame.setSshow(new SlideShow(frame,interval,this));
+		}
+		else if(command.trim().equals("exit")) {
+			System.out.println("EXITS");
+			if(frame.getSshow() != null && frame.getSshow().timer.isRunning())
+				frame.getSshow().timer.stop();
 		}
 	}
 }
