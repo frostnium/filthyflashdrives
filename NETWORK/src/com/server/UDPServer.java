@@ -37,8 +37,6 @@ public class UDPServer {
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		this.initCommand(sentence);
-		if(!sentence.equals("slideshow"))
-			sendData();
 	}
 	
 	public void sendData() throws IOException{
@@ -51,10 +49,8 @@ public class UDPServer {
 	}
 	
 	public void sendData(String slideShowStatus) throws IOException{
-		
-		String filename = slideShowStatus+frame.images.get(frame.imageIndex).toString();  
-		System.out.println(filename+tempIP+port);
-		sendData = filename.getBytes();                   
+		System.out.println(slideShowStatus+tempIP+port);
+		sendData = slideShowStatus.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
 		serverSocket.send(sendPacket); 
 	}
@@ -62,23 +58,22 @@ public class UDPServer {
 	public void initCommand(String command) throws IOException {
 		System.out.println("COMMAND: "+command);
 		if(command.trim().equals("next")) {
-			if(frame.sshow != null && frame.sshow.isActive) {
-				System.out.println("STOP SS NEXT press");
-				frame.sshow.timer.stop();
+			if(frame.imageIndex == frame.storedImages.size()-1) {
+				this.sendData("none");
 			}
-			frame.nextImage();
+			else {
+				frame.nextImage();
+				this.sendData();
+			}
 		}
 		else if(command.trim().equals("prev")) {
-			if(frame.sshow != null && frame.sshow.isActive) {
-				System.out.println("STOP SS PREV press");
-				frame.sshow.timer.stop();
-			}
 			frame.prevImage();
+			this.sendData();
 		}
 		else if(command.trim().equals("slideshow")) {
 			frame.displayImage(0);
 			frame.imageIndex = 0;
-			new SlideShow(frame,2000,this);
+			this.sendData();
 		}
 	}
 }
