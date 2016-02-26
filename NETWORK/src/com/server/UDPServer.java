@@ -53,23 +53,23 @@ public class UDPServer {
 	public void initCommand(String command) throws IOException {
 		System.out.println("COMMAND: "+command);
 		if(command.trim().equals("next")) {
-			if(frame.sshow != null && frame.sshow.isActive) {
+			if(frame.getSshow() != null && frame.getSshow().isActive) {
 				System.out.println("STOP SS NEXT press");
-				frame.sshow.timer.stop();
+				frame.getSshow().timer.stop();
 			}
 			frame.nextImage();
 		}
 		else if(command.trim().equals("prev")) {
-			if(frame.sshow != null && frame.sshow.isActive) {
+			if(frame.getSshow() != null && frame.getSshow().isActive) {
 				System.out.println("STOP SS PREV press");
-				frame.sshow.timer.stop();
+				frame.getSshow().timer.stop();
 			}
 			frame.prevImage();
 		}
 		else if(command.trim().equals("slideshow")) {
 			frame.displayImage(0);
 			frame.imageIndex = 0;
-			new SlideShow(frame,2000,this);
+			frame.setSshow(new SlideShow(frame,2000,this));
 		}
 	}
 }
