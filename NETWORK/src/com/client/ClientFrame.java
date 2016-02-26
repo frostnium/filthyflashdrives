@@ -25,6 +25,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private JButton slideshow;
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
+	private JTextArea ssInterval;
 	private JButton connect;
 	public JLabel fileName;
 	private SwingWorker<Void, Void> worker;
@@ -37,6 +38,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.slideshow = new JButton();
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
+		this.ssInterval = new JTextArea();
 		this.connect = new JButton();
 		this.fileName = new JLabel();
 		
@@ -93,6 +95,11 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		slideshow.addActionListener(this);
 		this.getContentPane().add(slideshow);
 		
+		ssInterval.setBounds(70, 210, 100, 20);
+		ssInterval.setText("1000");
+		this.getContentPane().add(ssInterval);
+		this.repaint();
+		
 		this.worker.addPropertyChangeListener(this);
 		this.worker.execute();
 	}
@@ -102,6 +109,12 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		if("fileName".equals(arg0.getPropertyName())){
 			this.fileName.setText("FILE NAME: "+(String) arg0.getNewValue());
 			repaint();
+		}
+		else if("ssInterval".equals(arg0.getPropertyName())) {
+			client.sentence = ssInterval.getText();
+			try {
+				client.send();
+			} catch (Exception e) {}
 		}
 		
 	}
@@ -123,10 +136,19 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		}
 		else if("exit".equals(arg0.getActionCommand())){
 			client.sentence = UDPClient.EXIT;
+			try {
+				client.send();
+			} catch (Exception e) {}
 			client.close();
 			System.exit(1);
 		}
 		else if("slideshow".equals(arg0.getActionCommand())) {
+			try {
+				Integer.parseInt(ssInterval.getText());
+			}catch(NumberFormatException ex) {
+				JOptionPane.showMessageDialog(this, "Invalid input!");
+				return;
+			}
 			client.sentence = UDPClient.SSHOW;
 			try {
 				client.send();
