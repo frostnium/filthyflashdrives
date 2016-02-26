@@ -25,6 +25,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 	private JTextArea ipTextArea;
 	private JButton connect;
 	public JLabel fileName;
+	public Timer timer;
 	
 	public ClientFrame() throws Exception {
 		this.client = new UDPClient(this);
@@ -36,6 +37,7 @@ public class ClientFrame extends JFrame implements ActionListener{
 		this.ipTextArea = new JTextArea();
 		this.connect = new JButton();
 		this.fileName = new JLabel();
+		this.timer = new Timer(500, this);
 		this.initComponents();
 	}
 	
@@ -86,6 +88,12 @@ public class ClientFrame extends JFrame implements ActionListener{
 		slideshow.setActionCommand("slideshow");
 		slideshow.addActionListener(this);
 		this.getContentPane().add(slideshow);
+		
+		timer.setActionCommand("timer");
+	}
+	
+	public void stopSlideshow() {
+		timer.stop();
 	}
 
 	public void actionPerformed(ActionEvent arg0) {
@@ -94,13 +102,17 @@ public class ClientFrame extends JFrame implements ActionListener{
 			try {
 				client.send();
 				client.receive();
-				fileName.setText("FILE NAME: "+client.getFileName());
+				if(client.getFileName().trim().equals("none")) 
+					stopSlideshow();
+				else
+					fileName.setText("FILE NAME: "+client.getFileName());
 			}catch(Exception ex){
 			
 			}
 		}
 		else if("prev".equals(arg0.getActionCommand())){
 			client.sentence = UDPClient.PREV;
+			stopSlideshow();
 			try {
 				client.send();
 				client.receive();
@@ -113,15 +125,14 @@ public class ClientFrame extends JFrame implements ActionListener{
 			System.exit(1);
 		}
 		else if("slideshow".equals(arg0.getActionCommand())) {
-			boolean isSlideShowDone=false;
+			stopSlideshow();		
 			client.sentence = UDPClient.SSHOW;
 			try {
 				client.send();
-				while(!isSlideShowDone){
-					isSlideShowDone=client.receiveSShow();
-					repaint();
-				}
+				client.receive();
+				fileName.setText("FILE NAME: "+client.getFileName());
 			}catch(Exception ex){}
+			timer.start();
 		}
 		else if("connect".equals(arg0.getActionCommand())){
 			try {
@@ -139,6 +150,9 @@ public class ClientFrame extends JFrame implements ActionListener{
 				ipTextArea.setBackground(Color.RED);
 			}
 			
+		}
+		else if("timer".equals(arg0.getActionCommand())) {
+			this.next.doClick();
 		}
 	}
 
