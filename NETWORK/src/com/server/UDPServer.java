@@ -3,6 +3,8 @@ package com.server;
 import java.io.*; 
 import java.net.*;
 
+import com.mp1.SlideShow;
+
 
 public class UDPServer {   
 	
@@ -10,6 +12,9 @@ public class UDPServer {
 	public DatagramSocket serverSocket;
 	public byte[] receiveData;
 	public byte[] sendData;
+	
+	private int port;
+	private InetAddress tempIP;
 	
 	public UDPServer() throws Exception{
 		this.frame = new ServerFrame();
@@ -27,31 +32,44 @@ public class UDPServer {
 	public void receive() throws Exception{
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
 		serverSocket.receive(receivePacket);                   
-		String sentence = new String( receivePacket.getData());                   
+		String sentence = new String( receivePacket.getData()).trim();                   
 		System.out.println("RECEIVED: " + sentence);
+		tempIP = receivePacket.getAddress();                   
+		port = receivePacket.getPort(); 
 		this.initCommand(sentence);
-		InetAddress IPAddress = receivePacket.getAddress();                   
-		int port = receivePacket.getPort();                   
-		String filename = frame.images.get(frame.imageIndex).toString();                   
-		sendData = filename.getBytes();                   
-		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);                   		
-		serverSocket.send(sendPacket);   
+		if(!sentence.equals("slideshow"))
+			sendData();
 	}
 	
-	public void initCommand(String command) {
+	public void sendData() throws IOException{
+		
+		String filename = frame.images.get(frame.imageIndex).toString();  
+		System.out.println(filename+tempIP+port);
+		sendData = filename.getBytes();                   
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
+		serverSocket.send(sendPacket); 
+	}
+	
+	public void initCommand(String command) throws IOException {
 		System.out.println("COMMAND: "+command);
 		if(command.trim().equals("next")) {
-			if(frame.sshow != null && frame.sshow.isActive) 
-				frame.sshow.timer.stop();
+			if(frame.getSshow() != null && frame.getSshow().isActive) {
+				System.out.println("STOP SS NEXT press");
+				frame.getSshow().timer.stop();
+			}
 			frame.nextImage();
 		}
 		else if(command.trim().equals("prev")) {
-			if(frame.sshow != null && frame.sshow.isActive) 
-				frame.sshow.timer.stop();
+			if(frame.getSshow() != null && frame.getSshow().isActive) {
+				System.out.println("STOP SS PREV press");
+				frame.getSshow().timer.stop();
+			}
 			frame.prevImage();
 		}
 		else if(command.trim().equals("slideshow")) {
-			frame.slideShow(500);
+			frame.displayImage(0);
+			frame.imageIndex = 0;
+			frame.setSshow(new SlideShow(frame,2000,this));
 		}
 	}
 }

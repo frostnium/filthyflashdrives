@@ -4,13 +4,15 @@ package com.client;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import javax.swing.*;
 
-public class ClientFrame extends JFrame implements ActionListener{
+public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener{
 	
 	/**
 	 * 
@@ -24,7 +26,8 @@ public class ClientFrame extends JFrame implements ActionListener{
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
 	private JButton connect;
-	private JLabel fileName;
+	public JLabel fileName;
+	private SwingWorker<Void, Void> worker;
 	
 	public ClientFrame() throws Exception {
 		this.client = new UDPClient();
@@ -36,6 +39,9 @@ public class ClientFrame extends JFrame implements ActionListener{
 		this.ipTextArea = new JTextArea();
 		this.connect = new JButton();
 		this.fileName = new JLabel();
+		
+		this.worker=new ClientSwingWorker(this.client);
+		
 		this.initComponents();
 	}
 	
@@ -86,15 +92,25 @@ public class ClientFrame extends JFrame implements ActionListener{
 		slideshow.setActionCommand("slideshow");
 		slideshow.addActionListener(this);
 		this.getContentPane().add(slideshow);
+		
+		this.worker.addPropertyChangeListener(this);
+		this.worker.execute();
 	}
 
+	@Override
+	public void propertyChange(PropertyChangeEvent arg0) {
+		if("fileName".equals(arg0.getPropertyName())){
+			this.fileName.setText("FILE NAME: "+(String) arg0.getNewValue());
+			repaint();
+		}
+		
+	}
+	
 	public void actionPerformed(ActionEvent arg0) {
 		if("next".equals(arg0.getActionCommand())){
 			client.sentence = UDPClient.NEXT;
 			try {
 				client.send();
-				client.receive();
-				fileName.setText("FILE NAME: "+client.fileName);
 			}catch(Exception ex){
 			
 			}
@@ -103,8 +119,6 @@ public class ClientFrame extends JFrame implements ActionListener{
 			client.sentence = UDPClient.PREV;
 			try {
 				client.send();
-				client.receive();
-				fileName.setText("FILE NAME: "+client.fileName);
 			}catch(Exception ex){}
 		}
 		else if("exit".equals(arg0.getActionCommand())){
@@ -116,7 +130,6 @@ public class ClientFrame extends JFrame implements ActionListener{
 			client.sentence = UDPClient.SSHOW;
 			try {
 				client.send();
-				client.receive();
 			}catch(Exception ex){}
 		}
 		else if("connect".equals(arg0.getActionCommand())){
@@ -137,5 +150,6 @@ public class ClientFrame extends JFrame implements ActionListener{
 			
 		}
 	}
+
 
 }
