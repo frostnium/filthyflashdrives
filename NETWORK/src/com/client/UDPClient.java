@@ -1,7 +1,6 @@
 package com.client;
 
 
-import java.io.*; 
 import java.net.*; 
 public class UDPClient {    
 	public static final String NEXT = "next";
@@ -15,7 +14,6 @@ public class UDPClient {
 	public String sentence;
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
-	public String fileName;
 	
 	public UDPClient() throws Exception{
 		this.sendData = new byte[1024];
@@ -31,15 +29,16 @@ public class UDPClient {
 		clientSocket.send(sendPacket);       
 	}
 	
-	public void receive() throws Exception {
+	public String receive() throws Exception {
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);       
-		clientSocket.receive(receivePacket);       
-		fileName = new String(receivePacket.getData());  
-		System.out.println("FROM SERVER: " + fileName);   
+		clientSocket.receive(receivePacket); 
+		String data=new String(receivePacket.getData()).trim();
 		this.receiveData = new byte[1024];
+		return data;
 	}
 	
 	public void close() {
 		clientSocket.close();
 	}
+
 }
