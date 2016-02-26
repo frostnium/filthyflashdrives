@@ -1,7 +1,5 @@
 package com.server;
 
-import java.awt.Dimension;
-import java.awt.Graphics;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -79,11 +77,4 @@ public class ServerFrame extends JFrame{
 		this.storedImages.get(index).setVisible(true);
 		this.repaint();
 	}
-	
-	public void slideShow(int interval) {
-		this.displayImage(0);
-		this.imageIndex = 0;
-		sshow = new SlideShow(this, interval);
-	}
-	
 }
