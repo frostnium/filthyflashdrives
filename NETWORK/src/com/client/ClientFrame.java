@@ -18,29 +18,61 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
 	private UDPClient client;
+	
+	//global components
 	private JButton next;
 	private JButton prev;
+	private JLabel fileName;
 	private JButton exit;
+	
+	//components for toggling
+	private ButtonGroup fileTypeGroup;
+	private JRadioButton[] fileType;
+	
+	//image-related components
 	private JButton slideshow;
+	private JTextArea ssInterval;
+	
+	//video- and audio-related components
+	private JButton playStop;
+	private ImageIcon[] playStopIcons;
+	
+	//connectivity components
 	private JLabel ipLabel;
 	private JTextArea ipTextArea;
-	private JTextArea ssInterval;
 	private JButton connect;
-	public JLabel fileName;
+	
+	
+	
 	private SwingWorker<Void, Void> worker;
 	
 	public ClientFrame() throws Exception {
 		this.client = new UDPClient();
+		
 		this.next = new JButton();
 		this.prev = new JButton();
 		this.exit = new JButton();
+		this.fileName = new JLabel();
+		
+		this.fileTypeGroup = new ButtonGroup();
+		this.fileType=new JRadioButton[2];
+		this.fileType[0] = new JRadioButton("Image",true);
+		this.fileType[1] = new JRadioButton("Video/Audio");
+		
+		
 		this.slideshow = new JButton();
+		this.ssInterval = new JTextArea();
+		
+		this.playStop = new JButton();
+		this.playStopIcons=new ImageIcon[2];
+		this.playStopIcons[0]=new ImageIcon("icons/play.png");
+		this.playStopIcons[1]=new ImageIcon("icons/stop.png");
+		
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
-		this.ssInterval = new JTextArea();
 		this.connect = new JButton();
-		this.fileName = new JLabel();
 		
 		this.worker=new ClientSwingWorker(this.client);
 		
@@ -53,23 +85,36 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		fileName.setBounds(100, 95, 200, 20);
+		fileName.setBounds(100, 75, 200, 20);
 		fileName.setText("FILE NAME: ");
 		this.getContentPane().add(fileName);
 		
-		ipLabel.setBounds(31, 120, 140, 10);
+		ipLabel.setBounds(31, 100, 140, 10);
 		ipLabel.setText("Enter Server IP Address:");
 		this.getContentPane().add(ipLabel);
 		
-		ipTextArea.setBounds(176, 118, 100, 20);
+		ipTextArea.setBounds(176, 98, 100, 20);
 		this.getContentPane().add(ipTextArea);
 		
-		connect.setBounds(281, 116, 70, 25);
+		connect.setBounds(281, 96, 70, 25);
 		connect.setText("connect");
 		connect.setFont(new Font("Lucida Grande",Font.BOLD,9));
 		connect.setActionCommand("connect");
 		connect.addActionListener(this);
 		this.getContentPane().add(connect);
+		
+		
+		fileType[0].setBounds(101, 125, 60, 15);
+		fileType[0].setActionCommand("imagetype");
+		fileType[0].addActionListener(this);
+		fileTypeGroup.add(fileType[0]);
+		this.getContentPane().add(fileType[0]);
+		
+		fileType[1].setBounds(191, 125, 100, 15);
+		fileType[1].setActionCommand("vatype");
+		fileType[1].addActionListener(this);
+		fileTypeGroup.add(fileType[1]);
+		this.getContentPane().add(fileType[1]);
 		
 		next.setBounds(140, 150, 100, 50);
 		next.setText("NEXT");
@@ -100,6 +145,12 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.getContentPane().add(ssInterval);
 		this.repaint();
 		
+		playStop.setBounds(170,210,40,40);
+		playStop.setActionCommand("play/stop");
+		playStop.addActionListener(this);
+		playStop.setVisible(false);
+		this.getContentPane().add(playStop);
+		
 		this.worker.addPropertyChangeListener(this);
 		this.worker.execute();
 	}
@@ -120,57 +171,64 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	}
 	
 	public void actionPerformed(ActionEvent arg0) {
-		if("next".equals(arg0.getActionCommand())){
-			client.sentence = UDPClient.NEXT;
-			try {
-				client.send();
-			}catch(Exception ex){
-			
-			}
+		switch(arg0.getActionCommand()){
+			case "imagetype": slideshow.setVisible(true);  //TODO: send ping shit
+							  ssInterval.setVisible(true);
+							  playStop.setVisible(false);
+							  break;
+				
+			case "vatype": slideshow.setVisible(false);  //TODO: send ping shit
+						   ssInterval.setVisible(false);
+						   playStop.setVisible(true);
+						   playStop.setIcon(playStopIcons[0]);
+						   break;
+		
+			case "play/stop": if(playStop.getIcon().equals(playStopIcons[0]))  //TODO: send ping shit
+								playStop.setIcon(playStopIcons[1]);
+							  else
+								  playStop.setIcon(playStopIcons[0]);
+							  break;
+				
+			case "next": client.sentence = UDPClient.NEXT;
+							try {
+								client.send();
+							}catch(Exception ex){} break;
+			case "prev": client.sentence = UDPClient.PREV;
+							try {
+								client.send();
+							}catch(Exception ex){} break;
+			case "exit": client.sentence = UDPClient.EXIT;
+							try {
+								client.send();
+							} catch (Exception e) {}
+							client.close();
+							System.exit(1); break;
+			case "slideshow": try {
+								Integer.parseInt(ssInterval.getText());
+							}catch(NumberFormatException ex) {
+								JOptionPane.showMessageDialog(this, "Invalid input!");
+								return;
+							}
+							client.sentence = UDPClient.SSHOW;
+							try {
+								client.send();
+							}catch(Exception ex){} break;
+			case "connect": try {
+							client.IPAddress=InetAddress.getByName(ipTextArea.getText());
+								try {
+									if(client.IPAddress.isReachable(3000)){
+										ipTextArea.setBackground(Color.GREEN);
+									}else
+										ipTextArea.setBackground(Color.RED);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+							catch (UnknownHostException e) {
+								ipTextArea.setBackground(Color.RED);
+							}
 		}
-		else if("prev".equals(arg0.getActionCommand())){
-			client.sentence = UDPClient.PREV;
-			try {
-				client.send();
-			}catch(Exception ex){}
-		}
-		else if("exit".equals(arg0.getActionCommand())){
-			client.sentence = UDPClient.EXIT;
-			try {
-				client.send();
-			} catch (Exception e) {}
-			client.close();
-			System.exit(1);
-		}
-		else if("slideshow".equals(arg0.getActionCommand())) {
-			try {
-				Integer.parseInt(ssInterval.getText());
-			}catch(NumberFormatException ex) {
-				JOptionPane.showMessageDialog(this, "Invalid input!");
-				return;
-			}
-			client.sentence = UDPClient.SSHOW;
-			try {
-				client.send();
-			}catch(Exception ex){}
-		}
-		else if("connect".equals(arg0.getActionCommand())){
-			try {
-				client.IPAddress=InetAddress.getByName(ipTextArea.getText());
-				try {
-					if(client.IPAddress.isReachable(3000)){
-						ipTextArea.setBackground(Color.GREEN);
-					}else
-						ipTextArea.setBackground(Color.RED);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			catch (UnknownHostException e) {
-				ipTextArea.setBackground(Color.RED);
-			}
-			
-		}
+		
 	}
 
 
