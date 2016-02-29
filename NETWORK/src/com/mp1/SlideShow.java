@@ -5,18 +5,18 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import javax.swing.Timer;
 
-import com.server.ServerFrame;
+import com.server.ImageViewer;
 import com.server.UDPServer;
 
 public class SlideShow implements ActionListener{
 	
-	public ServerFrame frame;
+	public ImageViewer frame;
 	public Timer timer;
 	public int interval;
 	public boolean isActive;
 	private UDPServer server;
 	
-	public SlideShow(ServerFrame frame, int interval,UDPServer server) {
+	public SlideShow(ImageViewer frame, int interval,UDPServer server) {
 		this.frame = frame;
 		this.server=server;
 		this.timer = new Timer(interval, this);
@@ -27,8 +27,8 @@ public class SlideShow implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		// TODO Auto-generated method stub
-		if(frame.imageIndex < frame.images.size()-1) {
-			frame.nextImage();
+		if(frame.mediaIndex < frame.storedImages.size()-1) {
+			frame.next();
 			try {
 				server.sendData();
 			} catch (IOException e) {
