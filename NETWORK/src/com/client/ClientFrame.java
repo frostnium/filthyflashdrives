@@ -175,25 +175,44 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			case "imagetype": slideshow.setVisible(true);  //TODO: send ping shit
 							  ssInterval.setVisible(true);
 							  playStop.setVisible(false);
+							  client.sentence = UDPClient.IMODE;
+								try {
+									client.send();
+								} catch (Exception e1) {}
 							  break;
 				
 			case "vatype": slideshow.setVisible(false);  //TODO: send ping shit
 						   ssInterval.setVisible(false);
 						   playStop.setVisible(true);
 						   playStop.setIcon(playStopIcons[0]);
+						   client.sentence = UDPClient.VMODE;
+							try {
+								client.send();
+							} catch (Exception e1) {}
 						   break;
 		
-			case "play/stop": if(playStop.getIcon().equals(playStopIcons[0]))  //TODO: send ping shit
+			case "play/stop": if(playStop.getIcon().equals(playStopIcons[0])) { //TODO: send ping shit
 								playStop.setIcon(playStopIcons[1]);
-							  else
+								client.sentence = UDPClient.PLAY;
+						}
+							  else {
 								  playStop.setIcon(playStopIcons[0]);
+								  client.sentence = UDPClient.PAUSE;
+							  }
+							  try {
+								client.send();
+							} catch (Exception e1) {}
 							  break;
 				
 			case "next": client.sentence = UDPClient.NEXT;
+							if(fileType[1].isSelected())
+								playStop.setIcon(playStopIcons[0]);
 							try {
 								client.send();
 							}catch(Exception ex){} break;
 			case "prev": client.sentence = UDPClient.PREV;
+							if(fileType[1].isSelected())
+								playStop.setIcon(playStopIcons[0]);
 							try {
 								client.send();
 							}catch(Exception ex){} break;

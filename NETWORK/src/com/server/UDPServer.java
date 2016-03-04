@@ -1,14 +1,22 @@
 package com.server;
 
-import java.io.*; 
-import java.net.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.ArrayList;
 
 import com.mp1.SlideShow;
 
 
 public class UDPServer {   
 	
-	public ServerFrame frame;
+	public static final int IMAGE_MODE = 0;
+	public static final int VIDEO_MODE = 1;
+	
+	public ArrayList<ServerMedia> media;
 	public DatagramSocket serverSocket;
 	public byte[] receiveData;
 	public byte[] sendData;
@@ -16,11 +24,16 @@ public class UDPServer {
 	private int port;
 	private InetAddress tempIP;
 	
+	private int mediaMode;
+	
 	public UDPServer() throws Exception{
-		this.frame = new ServerFrame();
+		this.media = new ArrayList<ServerMedia>();
+		this.media.add(new ImageViewer());
+		this.media.add(new VideoPlayer());
 		this.serverSocket = new DatagramSocket(9999);
 		this.receiveData = new byte[1024];
 		this.sendData = new byte[1024];
+		this.mediaMode = UDPServer.IMAGE_MODE;
 		while(true) {
 			this.receiveData = new byte[1024];
 			this.sendData = new byte[1024];
@@ -42,8 +55,8 @@ public class UDPServer {
 	}
 	
 	public void sendData() throws IOException{
-		
-		String filename = frame.images.get(frame.imageIndex).toString();  
+		File file = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
+		String filename = file.getName();
 		System.out.println(filename+tempIP+port);
 		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
@@ -72,32 +85,67 @@ public class UDPServer {
 	public void initCommand(String command) throws IOException {
 		System.out.println("COMMAND: "+command);
 		if(command.trim().equals("next")) {
-			if(frame.getSshow() != null && frame.getSshow().isActive) {
-				System.out.println("STOP SS NEXT press");
-				frame.getSshow().timer.stop();
-			}
-			frame.nextImage();
+			media.get(mediaMode).next();
+			if(mediaMode == UDPServer.IMAGE_MODE)
+				this.stopSlideshow();
 		}
 		else if(command.trim().equals("prev")) {
-			if(frame.getSshow() != null && frame.getSshow().isActive) {
-				System.out.println("STOP SS PREV press");
-				frame.getSshow().timer.stop();
-			}
-			frame.prevImage();
+			media.get(mediaMode).prev();
+			if(mediaMode == UDPServer.IMAGE_MODE)
+				this.stopSlideshow();
 		}
 		else if(command.trim().equals("slideshow")) {
-			if(frame.getSshow() != null && frame.getSshow().timer.isRunning())
+			ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
+			if(iViewer.getSshow() != null && iViewer.getSshow().timer.isRunning())
 				return;
 			int interval = this.reqandgetInterval();
-			frame.displayImage(0);
-			frame.imageIndex = 0;
+			iViewer.displayIndex(0);
+			iViewer.mediaIndex = 0;
 			this.sendData();
-			frame.setSshow(new SlideShow(frame,interval,this));
+			iViewer.setSshow(new SlideShow(iViewer,interval,this));
+		}
+		else if(command.trim().equals("imode")) {
+			if(mediaMode == UDPServer.IMAGE_MODE)
+				return;
+			this.stopVideo();
+			this.media.get(mediaMode).setVisible(false);
+			this.mediaMode = UDPServer.IMAGE_MODE;
+			this.media.get(mediaMode).setVisible(true);
+
+		}
+		else if(command.trim().equals("vmode")) {
+			if(mediaMode == UDPServer.VIDEO_MODE)
+				return;
+			this.stopSlideshow();
+			this.media.get(mediaMode).setVisible(false);
+			this.mediaMode = UDPServer.VIDEO_MODE;
+			this.media.get(mediaMode).setVisible(true);
+		}
+		else if(command.trim().equals("play")) {
+			VideoPlayer vPlayer = (VideoPlayer) media.get(mediaMode);
+			vPlayer.play();
+		}
+		else if(command.trim().equals("pause")) {
+			VideoPlayer vPlayer = (VideoPlayer) media.get(mediaMode);
+			vPlayer.pause();
 		}
 		else if(command.trim().equals("exit")) {
-			System.out.println("EXITS");
-			if(frame.getSshow() != null && frame.getSshow().timer.isRunning())
-				frame.getSshow().timer.stop();
+			if(mediaMode == UDPServer.IMAGE_MODE)
+				this.stopSlideshow();
+			else
+				this.stopVideo();
 		}
 	}
+	
+	public void stopSlideshow() {
+		ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
+		if(iViewer.getSshow() != null && iViewer.getSshow().timer.isRunning())
+			iViewer.getSshow().timer.stop();
+	}
+	
+	public void stopVideo() {
+		VideoPlayer vPlayer = (VideoPlayer) media.get(mediaMode);
+		vPlayer.stop();
+	}
+	
 }
