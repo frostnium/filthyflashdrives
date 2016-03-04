@@ -34,6 +34,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	//image-related components
 	private JButton slideshow;
 	private JTextArea ssInterval;
+	private JLabel image;
 	
 	//video- and audio-related components
 	private JButton playStop;
@@ -64,6 +65,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		
 		this.slideshow = new JButton();
 		this.ssInterval = new JTextArea();
+		this.image = new JLabel();
 		
 		this.playStop = new JButton();
 		this.playStopIcons=new ImageIcon[2];
@@ -143,13 +145,16 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		ssInterval.setBounds(70, 210, 100, 20);
 		ssInterval.setText("1000");
 		this.getContentPane().add(ssInterval);
-		this.repaint();
-		
+
 		playStop.setBounds(170,210,40,40);
 		playStop.setActionCommand("play/stop");
 		playStop.addActionListener(this);
 		playStop.setVisible(false);
 		this.getContentPane().add(playStop);
+		
+		image.setBounds(10, 200, 400, 200);
+		this.getContentPane().add(image);
+		this.repaint();
 		
 		this.worker.addPropertyChangeListener(this);
 		this.worker.execute();
@@ -166,6 +171,25 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			try {
 				client.send();
 			} catch (Exception e) {}
+		}
+		else if("receivedchunk".equals(arg0.getPropertyName())) {
+			client.sentence = "RCHUNK";
+			try {
+				client.send();
+			} catch (Exception e) {}
+		}
+		else if("complete".equals(arg0.getPropertyName())) {
+			InputStream in = new ByteArrayInputStream(client.imageData);
+			BufferedImage bImageFromConvert = null;
+			try {
+				bImageFromConvert = ImageIO.read(in);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			this.image.setIcon(new ImageIcon(bImageFromConvert.getScaledInstance(400, 200, Image.SCALE_DEFAULT)));
+			this.repaint();
 		}
 		
 	}
