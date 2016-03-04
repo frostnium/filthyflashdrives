@@ -21,6 +21,9 @@ public class UDPServer {
 	public byte[] receiveData;
 	public byte[] sendData;
 	
+	public byte[] sendImageData;
+	public byte[] receiveImageData;
+	
 	private int port;
 	private InetAddress tempIP;
 	
@@ -33,10 +36,14 @@ public class UDPServer {
 		this.serverSocket = new DatagramSocket(9999);
 		this.receiveData = new byte[1024];
 		this.sendData = new byte[1024];
+		this.receiveImageData = new byte[1500];
+		this.sendImageData = new byte[1500];
 		this.mediaMode = UDPServer.IMAGE_MODE;
 		while(true) {
 			this.receiveData = new byte[1024];
 			this.sendData = new byte[1024];
+			this.receiveImageData = new byte[1500];
+			this.sendImageData = new byte[1500];
 			this.receive();
 		}
 	}
@@ -50,18 +57,55 @@ public class UDPServer {
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		this.initCommand(sentence);
-		if(!sentence.equals("slideshow") || !sentence.equals("exit"))
+		if(!sentence.equals("slideshow") || !sentence.equals("exit")) {
 			sendData();
+			sendImage();
+		}
 	}
 	
 	public void sendData() throws IOException{
 		File file = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
-		String filename = file.getName();
+		String filename = "FILENAME:"+file.getName();
 		System.out.println(filename+tempIP+port);
 		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
 		serverSocket.send(sendPacket); 
 	}
+	
+	public void sendImage() throws IOException {
+		File imageFile = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
+		BufferedImage img = ImageIO.read(imageFile);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();        
+		ImageIO.write(img, FileType.getExtension(imageFile.getName()), baos);
+		baos.flush();
+		byte[] bytes = baos.toByteArray();
+		int interval = 0;
+		int addend = 1500;
+		DatagramPacket sendPacket;
+		System.out.println("IMAGE LENgTH: "+bytes.length);
+		do {
+			sendImageData = new byte[1500];
+			sendImageData = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
+			serverSocket.send(sendPacket);
+			if(interval + addend > bytes.length) 
+				addend = bytes.length - interval;
+			else
+				interval += addend;
+			
+			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
+			serverSocket.receive(receivePacket);
+			String ack = new String(receivePacket.getData()).trim();
+			System.out.println(ack+" for interval:"+interval);
+		}while(interval < bytes.length);
+		
+		System.out.println("DONE");
+		String message = "TRCOMPLETE";
+		sendData = message.getBytes();                   
+		sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
+		serverSocket.send(sendPacket); 
+	}
+	
 	
 	public int reqandgetInterval() throws IOException {
 		this.receiveData = new byte[1024];
