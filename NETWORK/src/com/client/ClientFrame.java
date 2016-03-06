@@ -68,7 +68,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.playStop = new JButton();
 		this.playStopIcons=new ImageIcon[2];
 		this.playStopIcons[0]=new ImageIcon("icons/play.png");
-		this.playStopIcons[1]=new ImageIcon("icons/stop.png");
+		this.playStopIcons[1]=new ImageIcon("icons/pause.png");
 		
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
@@ -146,6 +146,8 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.repaint();
 		
 		playStop.setBounds(170,210,40,40);
+		playStop.setContentAreaFilled(false);
+		playStop.setBorderPainted(false);
 		playStop.setActionCommand("play/stop");
 		playStop.addActionListener(this);
 		playStop.setVisible(false);
