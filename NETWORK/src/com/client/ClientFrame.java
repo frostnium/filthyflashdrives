@@ -4,13 +4,19 @@ package com.client;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+
+import com.mp1.Global;
 
 public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener{
 	
@@ -46,10 +52,12 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private JButton connect;
 	
 	
-	
+	private int nChunks;
 	private SwingWorker<Void, Void> worker;
 	
 	public ClientFrame() throws Exception {
+		this.nChunks = 0;
+		
 		this.client = new UDPClient();
 		
 		this.next = new JButton();
@@ -83,7 +91,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	
 	private void initComponents() {
 		this.setLayout(null);
-		this.setBounds(0, 0, 400, 300);
+		this.setBounds(0, 0, 400, 500);
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -152,7 +160,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		playStop.setVisible(false);
 		this.getContentPane().add(playStop);
 		
-		image.setBounds(10, 200, 400, 200);
+		image.setBounds(0, 250, 400, 200);
 		this.getContentPane().add(image);
 		this.repaint();
 		
@@ -173,11 +181,16 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			} catch (Exception e) {}
 		}
 		else if("receivedchunk".equals(arg0.getPropertyName())) {
+			nChunks++;
 			client.sentence = "RCHUNK";
-			try {
-				client.send();
-			} catch (Exception e) {}
+			if(nChunks==Global.nChunksBeforeAck){
+				try {
+					nChunks=0;
+					client.send();
+				} catch (Exception e) {}
+			}
 		}
+		
 		else if("complete".equals(arg0.getPropertyName())) {
 			InputStream in = new ByteArrayInputStream(client.imageData);
 			BufferedImage bImageFromConvert = null;
