@@ -18,6 +18,7 @@ public class UDPClient {
 	public String sentence;
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
+	public byte[] imageData;
 	
 	public UDPClient() throws Exception{
 		this.sendData = new byte[1500];
