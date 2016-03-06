@@ -1,5 +1,7 @@
 package com.server;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -7,7 +9,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 
+import javax.imageio.ImageIO;
+
+import com.mp1.FileType;
+import com.mp1.Global;
 import com.mp1.SlideShow;
 
 
@@ -29,7 +36,10 @@ public class UDPServer {
 	
 	private int mediaMode;
 	
+	private int nChunks;
 	public UDPServer() throws Exception{
+		this.nChunks=0;
+		
 		this.media = new ArrayList<ServerMedia>();
 		this.media.add(new ImageViewer());
 		this.media.add(new VideoPlayer());
@@ -59,7 +69,6 @@ public class UDPServer {
 		this.initCommand(sentence);
 		if(!sentence.equals("slideshow") || !sentence.equals("exit")) {
 			sendData();
-			sendImage();
 		}
 	}
 	
@@ -88,15 +97,18 @@ public class UDPServer {
 			sendImageData = Arrays.copyOfRange(bytes, interval, interval+addend);
 			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
 			serverSocket.send(sendPacket);
+			nChunks++;
 			if(interval + addend > bytes.length) 
 				addend = bytes.length - interval;
 			else
 				interval += addend;
-			
-			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
-			serverSocket.receive(receivePacket);
-			String ack = new String(receivePacket.getData()).trim();
-			System.out.println(ack+" for interval:"+interval);
+			if(nChunks==Global.nChunksBeforeAck){
+				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
+				serverSocket.receive(receivePacket);
+				String ack = new String(receivePacket.getData()).trim();
+				System.out.println(ack+" for interval:"+interval);
+				nChunks=0;
+			}
 		}while(interval < bytes.length);
 		
 		System.out.println("DONE");
@@ -132,11 +144,13 @@ public class UDPServer {
 			media.get(mediaMode).next();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendImage();
 		}
 		else if(command.trim().equals("prev")) {
 			media.get(mediaMode).prev();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendImage();
 		}
 		else if(command.trim().equals("slideshow")) {
 			ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
