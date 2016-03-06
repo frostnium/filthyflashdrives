@@ -18,27 +18,28 @@ public class UDPClient {
 	public String sentence;
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
+	public byte[] imageData;
 	
 	public UDPClient() throws Exception{
-		this.sendData = new byte[1024];
-		this.receiveData = new byte[1024];
+		this.sendData = new byte[1500];
+		this.receiveData = new byte[1500];
 		this.clientSocket = new DatagramSocket();
 		this.IPAddress = InetAddress.getByName("localhost");
 		this.sentence = "";
 	}
 	
 	public void send() throws Exception {
+		this.sendData = new byte[1500];
 		sendData = sentence.getBytes();       
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9999);       
 		clientSocket.send(sendPacket);       
 	}
 	
-	public String receive() throws Exception {
+	public DatagramPacket receive() throws Exception {
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);       
 		clientSocket.receive(receivePacket); 
-		String data=new String(receivePacket.getData()).trim();
-		this.receiveData = new byte[1024];
-		return data;
+		this.receiveData = new byte[1500];
+		return receivePacket;
 	}
 	
 	public void close() {

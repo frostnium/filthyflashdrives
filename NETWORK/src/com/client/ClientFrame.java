@@ -4,13 +4,19 @@ package com.client;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+
+import com.mp1.Global;
 
 public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener{
 	
@@ -34,6 +40,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	//image-related components
 	private JButton slideshow;
 	private JTextArea ssInterval;
+	private JLabel image;
 	
 	//video- and audio-related components
 	private JButton playStop;
@@ -45,10 +52,12 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private JButton connect;
 	
 	
-	
+	private int nChunks;
 	private SwingWorker<Void, Void> worker;
 	
 	public ClientFrame() throws Exception {
+		this.nChunks = 0;
+		
 		this.client = new UDPClient();
 		
 		this.next = new JButton();
@@ -64,6 +73,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		
 		this.slideshow = new JButton();
 		this.ssInterval = new JTextArea();
+		this.image = new JLabel();
 		
 		this.playStop = new JButton();
 		this.playStopIcons=new ImageIcon[2];
@@ -81,7 +91,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	
 	private void initComponents() {
 		this.setLayout(null);
-		this.setBounds(0, 0, 400, 300);
+		this.setBounds(0, 0, 400, 500);
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -143,8 +153,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		ssInterval.setBounds(70, 210, 100, 20);
 		ssInterval.setText("1000");
 		this.getContentPane().add(ssInterval);
-		this.repaint();
-		
+
 		playStop.setBounds(170,210,40,40);
 		playStop.setContentAreaFilled(false);
 		playStop.setBorderPainted(false);
@@ -152,6 +161,10 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		playStop.addActionListener(this);
 		playStop.setVisible(false);
 		this.getContentPane().add(playStop);
+		
+		image.setBounds(0, 250, 400, 200);
+		this.getContentPane().add(image);
+		this.repaint();
 		
 		this.worker.addPropertyChangeListener(this);
 		this.worker.execute();
@@ -168,6 +181,30 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			try {
 				client.send();
 			} catch (Exception e) {}
+		}
+		else if("receivedchunk".equals(arg0.getPropertyName())) {
+			nChunks++;
+			client.sentence = "RCHUNK";
+			if(nChunks==Global.nChunksBeforeAck){
+				try {
+					nChunks=0;
+					client.send();
+				} catch (Exception e) {}
+			}
+		}
+		
+		else if("complete".equals(arg0.getPropertyName())) {
+			InputStream in = new ByteArrayInputStream(client.imageData);
+			BufferedImage bImageFromConvert = null;
+			try {
+				bImageFromConvert = ImageIO.read(in);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			this.image.setIcon(new ImageIcon(bImageFromConvert.getScaledInstance(400, 200, Image.SCALE_DEFAULT)));
+			this.repaint();
 		}
 		
 	}

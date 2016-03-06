@@ -1,5 +1,7 @@
 package com.server;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -7,7 +9,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 
+import javax.imageio.ImageIO;
+
+import com.mp1.FileType;
+import com.mp1.Global;
 import com.mp1.SlideShow;
 
 
@@ -21,22 +28,32 @@ public class UDPServer {
 	public byte[] receiveData;
 	public byte[] sendData;
 	
+	public byte[] sendImageData;
+	public byte[] receiveImageData;
+	
 	private int port;
 	private InetAddress tempIP;
 	
 	private int mediaMode;
 	
+	private int nChunks;
 	public UDPServer() throws Exception{
+		this.nChunks=0;
+		
 		this.media = new ArrayList<ServerMedia>();
 		this.media.add(new ImageViewer());
 		this.media.add(new VideoPlayer());
 		this.serverSocket = new DatagramSocket(9999);
 		this.receiveData = new byte[1024];
 		this.sendData = new byte[1024];
+		this.receiveImageData = new byte[1500];
+		this.sendImageData = new byte[1500];
 		this.mediaMode = UDPServer.IMAGE_MODE;
 		while(true) {
 			this.receiveData = new byte[1024];
 			this.sendData = new byte[1024];
+			this.receiveImageData = new byte[1500];
+			this.sendImageData = new byte[1500];
 			this.receive();
 		}
 	}
@@ -50,18 +67,57 @@ public class UDPServer {
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		this.initCommand(sentence);
-		if(!sentence.equals("slideshow") || !sentence.equals("exit"))
+		if(!sentence.equals("slideshow") || !sentence.equals("exit")) {
 			sendData();
+		}
 	}
 	
 	public void sendData() throws IOException{
 		File file = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
-		String filename = file.getName();
+		String filename = "FILENAME:"+file.getName();
 		System.out.println(filename+tempIP+port);
 		sendData = filename.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
 		serverSocket.send(sendPacket); 
 	}
+	
+	public void sendImage() throws IOException {
+		File imageFile = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
+		BufferedImage img = ImageIO.read(imageFile);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();        
+		ImageIO.write(img, FileType.getExtension(imageFile.getName()), baos);
+		baos.flush();
+		byte[] bytes = baos.toByteArray();
+		int interval = 0;
+		int addend = 1500;
+		DatagramPacket sendPacket;
+		System.out.println("IMAGE LENgTH: "+bytes.length);
+		do {
+			sendImageData = new byte[1500];
+			sendImageData = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
+			serverSocket.send(sendPacket);
+			nChunks++;
+			if(interval + addend > bytes.length) 
+				addend = bytes.length - interval;
+			else
+				interval += addend;
+			if(nChunks==Global.nChunksBeforeAck){
+				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
+				serverSocket.receive(receivePacket);
+				String ack = new String(receivePacket.getData()).trim();
+				System.out.println(ack+" for interval:"+interval);
+				nChunks=0;
+			}
+		}while(interval < bytes.length);
+		
+		System.out.println("DONE");
+		String message = "TRCOMPLETE";
+		sendData = message.getBytes();                   
+		sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
+		serverSocket.send(sendPacket); 
+	}
+	
 	
 	public int reqandgetInterval() throws IOException {
 		this.receiveData = new byte[1024];
@@ -88,11 +144,13 @@ public class UDPServer {
 			media.get(mediaMode).next();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendImage();
 		}
 		else if(command.trim().equals("prev")) {
 			media.get(mediaMode).prev();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendImage();
 		}
 		else if(command.trim().equals("slideshow")) {
 			ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
