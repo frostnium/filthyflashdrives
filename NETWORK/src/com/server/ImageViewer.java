@@ -46,6 +46,26 @@ public class ImageViewer extends ServerMedia{
 		
 	}
 	
+	public void refreshImageList() {
+		for(int i = 0; i < mediaFiles.length; i++)
+			this.getContentPane().remove(storedImages.get(i));
+		this.storedImages = new ArrayList<JLabel>();
+		File myDir = new File("images");
+		this.mediaFiles = myDir.listFiles();
+		if(myDir.exists() && myDir.isDirectory()) 
+			mediaFiles = myDir.listFiles(); 
+		
+		for(int i = 0; i < mediaFiles.length; i++) {
+			storedImages.add(new JLabel(new ImageIcon(mediaFiles[i].getPath())));
+			storedImages.get(i).setBounds(0, 0, 1000, 600);
+			storedImages.get(i).setVisible(false);
+			this.getContentPane().add(storedImages.get(i));
+		}
+		
+		storedImages.get(mediaIndex).setVisible(true);
+		this.repaint();
+	}
+	
 	public void next() {
 		if(this.mediaIndex + 1 < storedImages.size()) {
 			this.storedImages.get(mediaIndex).setVisible(false);

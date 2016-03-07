@@ -61,12 +61,9 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private JButton uploadbtn;
 	private File uploadFile;
 	
-	private int nChunks;
 	private SwingWorker<Void, Void> worker;
 	
 	public ClientFrame() throws Exception {
-		this.nChunks = 0;
-		
 		this.client = new UDPClient();
 		
 		this.browsebtn = new JButton();
@@ -201,7 +198,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	@Override
 	public void propertyChange(PropertyChangeEvent arg0) {
 		if("fileName".equals(arg0.getPropertyName())){
-			this.fileName.setText("FILE NAME: "+(String) arg0.getNewValue());
+			this.fileName.setText("FILE NAME: "+((String) arg0.getNewValue()).substring(9));
 			repaint();
 		}
 		else if("ssInterval".equals(arg0.getPropertyName())) {
@@ -210,17 +207,6 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 				client.send();
 			} catch (Exception e) {}
 		}
-		else if("receivedchunk".equals(arg0.getPropertyName())) {
-			nChunks++;
-			client.sentence = "RCHUNK";
-			if(nChunks==Global.nChunksBeforeAck){
-				try {
-					nChunks=0;
-					client.send();
-				} catch (Exception e) {}
-			}
-		}
-		
 		else if("complete".equals(arg0.getPropertyName())) {
 			InputStream in = new ByteArrayInputStream(client.imageData);
 			BufferedImage bImageFromConvert = null;
@@ -234,6 +220,16 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			this.image.setIcon(new ImageIcon(bImageFromConvert.getScaledInstance(400, 200, Image.SCALE_DEFAULT)));
 			this.repaint();
 		}
+		else if("goupload".equals(arg0.getPropertyName())) {
+			System.out.println("upload time");
+			try {
+				client.sendImage(uploadFile);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 		
 	}
 	
@@ -255,8 +251,14 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 				                System.out.println("No Selection ");
 				            }
 							break;
-			case "upload": //TODO: file uplaoding
-							break;
+			case "upload": if(fileUploadName.getText().equals("NONE")) {
+						JOptionPane.showMessageDialog(this, "No image selected!");
+						return;
+					}
+					client.sentence = UDPClient.STARTUPLOAD;
+					try {
+						client.send();
+					}catch(Exception ex){} break;
 			case "imagetype": slideshow.setVisible(true);  //TODO: send ping shit
 							  ssInterval.setVisible(true);
 							  playStop.setVisible(false);
