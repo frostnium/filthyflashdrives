@@ -198,7 +198,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	@Override
 	public void propertyChange(PropertyChangeEvent arg0) {
 		if("fileName".equals(arg0.getPropertyName())){
-			this.fileName.setText("FILE NAME: "+(String) arg0.getNewValue());
+			this.fileName.setText("FILE NAME: "+((String) arg0.getNewValue()).substring(9));
 			repaint();
 		}
 		else if("ssInterval".equals(arg0.getPropertyName())) {
