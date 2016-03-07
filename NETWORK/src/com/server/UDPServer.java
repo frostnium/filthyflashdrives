@@ -30,16 +30,17 @@ public class UDPServer {
 	
 	public byte[] sendImageData;
 	public byte[] receiveImageData;
+	private byte[] tempImageData;
 	
 	private int port;
 	private InetAddress tempIP;
 	
 	private int mediaMode;
+	private String receivedFileName;
+	private boolean imageReceivingMode;
 	
-	private int nChunks;
 	public UDPServer() throws Exception{
-		this.nChunks=0;
-		
+		this.imageReceivingMode = false;
 		this.media = new ArrayList<ServerMedia>();
 		this.media.add(new ImageViewer());
 		this.media.add(new VideoPlayer());
@@ -48,10 +49,11 @@ public class UDPServer {
 		this.sendData = new byte[1024];
 		this.receiveImageData = new byte[1500];
 		this.sendImageData = new byte[1500];
+		this.tempImageData = new byte[0];
 		this.mediaMode = UDPServer.IMAGE_MODE;
 		while(true) {
-			this.receiveData = new byte[1024];
-			this.sendData = new byte[1024];
+			this.receiveData = new byte[1500];
+			this.sendData = new byte[1500];
 			this.receiveImageData = new byte[1500];
 			this.sendImageData = new byte[1500];
 			this.receive();
@@ -63,13 +65,31 @@ public class UDPServer {
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
 		serverSocket.receive(receivePacket);                   
 		String sentence = new String( receivePacket.getData()).trim();                   
-		System.out.println("RECEIVED: " + sentence);
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
-		this.initCommand(sentence);
-		if(!sentence.equals("slideshow") || !sentence.equals("exit")) {
-			sendData();
+		if(imageReceivingMode) {
+			this.receiveImageData(receivePacket);
+			if(sentence.substring(0, 10).equals("TRCOMPLETE")) {
+				System.out.println("COMPLETEE");
+				imageReceivingMode = false;
+				InputStream in = new ByteArrayInputStream(tempImageData);
+				BufferedImage bImageFromConvert = null;
+				receivedFileName = sentence.substring(10);
+				try {
+					bImageFromConvert = ImageIO.read(in);
+					File outputfile = new File("images/"+receivedFileName);
+					ImageIO.write(bImageFromConvert, FileType.getExtension(receivedFileName), outputfile);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
+				iViewer.refreshImageList();
+			}
 		}
+		else		
+			this.initCommand(sentence);
 	}
 	
 	public void sendData() throws IOException{
@@ -91,23 +111,26 @@ public class UDPServer {
 		int interval = 0;
 		int addend = 1500;
 		DatagramPacket sendPacket;
+		
+		int chunksReceived = 0;
 		System.out.println("IMAGE LENgTH: "+bytes.length);
 		do {
 			sendImageData = new byte[1500];
 			sendImageData = Arrays.copyOfRange(bytes, interval, interval+addend);
 			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
 			serverSocket.send(sendPacket);
-			nChunks++;
+			chunksReceived++;
 			if(interval + addend > bytes.length) 
 				addend = bytes.length - interval;
 			else
 				interval += addend;
-			if(nChunks==Global.nChunksBeforeAck){
-				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
-				serverSocket.receive(receivePacket);
-				String ack = new String(receivePacket.getData()).trim();
-				System.out.println(ack+" for interval:"+interval);
-				nChunks=0;
+			if(chunksReceived==Global.nChunksBeforeAck){
+				try {
+					Thread.sleep(Global.millsToBuffer);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				chunksReceived=0;
 			}
 		}while(interval < bytes.length);
 		
@@ -118,6 +141,9 @@ public class UDPServer {
 		serverSocket.send(sendPacket); 
 	}
 	
+	public void receiveImageData(DatagramPacket receivePacket) {
+		tempImageData = Global.concat(tempImageData, receivePacket.getData());
+	}
 	
 	public int reqandgetInterval() throws IOException {
 		this.receiveData = new byte[1024];
@@ -139,17 +165,18 @@ public class UDPServer {
 	}
 	
 	public void initCommand(String command) throws IOException {
-		System.out.println("COMMAND: "+command);
 		if(command.trim().equals("next")) {
 			media.get(mediaMode).next();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendData();
 			sendImage();
 		}
 		else if(command.trim().equals("prev")) {
 			media.get(mediaMode).prev();
 			if(mediaMode == UDPServer.IMAGE_MODE)
 				this.stopSlideshow();
+			sendData();
 			sendImage();
 		}
 		else if(command.trim().equals("slideshow")) {
@@ -169,7 +196,7 @@ public class UDPServer {
 			this.media.get(mediaMode).setVisible(false);
 			this.mediaMode = UDPServer.IMAGE_MODE;
 			this.media.get(mediaMode).setVisible(true);
-
+			sendData();
 		}
 		else if(command.trim().equals("vmode")) {
 			if(mediaMode == UDPServer.VIDEO_MODE)
@@ -178,6 +205,7 @@ public class UDPServer {
 			this.media.get(mediaMode).setVisible(false);
 			this.mediaMode = UDPServer.VIDEO_MODE;
 			this.media.get(mediaMode).setVisible(true);
+			sendData();
 		}
 		else if(command.trim().equals("play")) {
 			VideoPlayer vPlayer = (VideoPlayer) media.get(mediaMode);
@@ -192,6 +220,15 @@ public class UDPServer {
 				this.stopSlideshow();
 			else
 				this.stopVideo();
+		}
+		else if(command.trim().equals("startupload")) {
+			String message = "GOUPLOAD";
+			System.out.println(message);
+			sendData = new byte[1500];
+			sendData = message.getBytes();                   
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
+			serverSocket.send(sendPacket); 
+			this.imageReceivingMode = true;
 		}
 	}
 	
