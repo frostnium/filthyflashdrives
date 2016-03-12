@@ -4,6 +4,9 @@ package com.client;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -16,12 +19,11 @@ import java.net.UnknownHostException;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.mp1.CustomFilter;
 import com.mp1.Global;
 
-public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener{
+public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener, MouseMotionListener{
 	
 	/**
 	 * 
@@ -31,6 +33,9 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private UDPClient client;
 	
 	//global components
+	private JLabel frameHeader;
+	private JLayeredPane lpane;
+	private JLabel background;
 	private JButton next;
 	private JButton prev;
 	private JLabel fileName;
@@ -60,11 +65,19 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	private JLabel fileUploadName;
 	private JButton uploadbtn;
 	private File uploadFile;
-	
+
 	private SwingWorker<Void, Void> worker;
+
+	protected Point initialClick;
 	
 	public ClientFrame() throws Exception {
 		this.client = new UDPClient();
+		
+		this.background = new JLabel();
+		
+		this.lpane = new JLayeredPane();
+		
+		this.frameHeader = new JLabel();
 		
 		this.browsebtn = new JButton();
 		this.fileUploadName = new JLabel();
@@ -88,7 +101,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		this.playStop = new JButton();
 		this.playStopIcons=new ImageIcon[2];
 		this.playStopIcons[0]=new ImageIcon("icons/play.png");
-		this.playStopIcons[1]=new ImageIcon("icons/stop.png");
+		this.playStopIcons[1]=new ImageIcon("icons/pause.png");
 		
 		this.ipLabel = new JLabel();
 		this.ipTextArea = new JTextArea();
@@ -101,95 +114,119 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	
 	private void initComponents() {
 		this.setLayout(null);
-		this.setBounds(0, 0, 400, 500);
+		this.setBounds(100, 100, 400, 500);
+		this.setUndecorated(true);
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				
-		fileName.setBounds(100, 25, 200, 20);
-		fileName.setText("FILE NAME: ");
-		this.getContentPane().add(fileName);
 		
-		ipLabel.setBounds(31, 50, 140, 10);
+		lpane.setBounds(0, 0, 400, 500);
+		lpane.setVisible(true);
+		this.add(lpane);
+		
+		fileName.setBounds(50, 50, 150, 20);
+		fileName.setText("FILENAME: ");
+		this.lpane.add(fileName);
+		
+		ipLabel.setBounds(31, 105, 140, 10);
 		ipLabel.setText("Enter Server IP Address:");
-		this.getContentPane().add(ipLabel);
+		this.lpane.add(ipLabel);
 		
-		ipTextArea.setBounds(176, 48, 100, 20);
-		this.getContentPane().add(ipTextArea);
+		ipTextArea.setBounds(176, 100, 100, 20);
+		this.lpane.add(ipTextArea);
 		
-		connect.setBounds(281, 46, 70, 25);
-		connect.setText("connect");
-		connect.setFont(new Font("Lucida Grande",Font.BOLD,9));
+		connect.setBounds(281, 98, 70, 25);
+		connect.setIcon(new ImageIcon("icons/connect.png"));
 		connect.setActionCommand("connect");
 		connect.addActionListener(this);
-		this.getContentPane().add(connect);
+		this.lpane.add(connect);
 		
 		
-		fileType[0].setBounds(101, 75, 60, 15);
+		fileType[0].setBounds(101, 143, 60, 15);
+		fileType[0].setOpaque(false);
 		fileType[0].setActionCommand("imagetype");
 		fileType[0].addActionListener(this);
 		fileTypeGroup.add(fileType[0]);
-		this.getContentPane().add(fileType[0]);
+		this.lpane.add(fileType[0]);
 		
-		fileType[1].setBounds(191, 75, 100, 15);
+		fileType[1].setBounds(191, 143, 100, 15);
+		fileType[1].setOpaque(false);
 		fileType[1].setActionCommand("vatype");
 		fileType[1].addActionListener(this);
 		fileTypeGroup.add(fileType[1]);
-		this.getContentPane().add(fileType[1]);
+		this.lpane.add(fileType[1]);
 		
-		next.setBounds(140, 100, 100, 50);
-		next.setText("NEXT");
+		next.setBounds(230, 170, 70, 50);
+		next.setIcon(new ImageIcon("icons/next.png"));
 		next.setActionCommand("next");
 		next.addActionListener(this);
-		this.getContentPane().add(next);
+		this.lpane.add(next);
 		
-		prev.setBounds(40, 100, 100, 50);
-		prev.setText("PREVIOUS");
+		prev.setBounds(80, 170, 70, 50);
+		prev.setIcon(new ImageIcon("icons/prev.png"));
 		prev.setActionCommand("prev");
 		prev.addActionListener(this);
-		this.getContentPane().add(prev);
+		this.lpane.add(prev);
 		
-		exit.setBounds(240, 100, 100, 50);
-		exit.setText("EXIT");
+		exit.setBounds(370, 0, 24, 24);
+		exit.setContentAreaFilled(false);
+		exit.setBorderPainted(false);
+		exit.setIcon(new ImageIcon("icons/exit.png"));
 		exit.setActionCommand("exit");
 		exit.addActionListener(this);
-		this.getContentPane().add(exit);
+		this.lpane.add(exit);
 		
-		slideshow.setBounds(40, 160, 20, 20);
+		browsebtn.setBounds(220, 45, 30, 30);
+		browsebtn.setIcon(new ImageIcon("icons/browse.png"));
+		browsebtn.setActionCommand("browse");
+		browsebtn.addActionListener(this);
+		this.lpane.add(browsebtn);
+		
+		fileUploadName.setBounds(254,45,100,30);
+		fileUploadName.setFont(new Font("Serif",Font.PLAIN,10));
+		fileUploadName.setText("NONE");
+		this.lpane.add(fileUploadName);
+		
+		uploadbtn.setBounds(345, 45, 30, 30);
+		uploadbtn.setIcon(new ImageIcon("icons/upload.png"));
+		uploadbtn.setActionCommand("upload");
+		uploadbtn.addActionListener(this);
+		this.lpane.add(uploadbtn);
+		
+		slideshow.setBounds(165, 170, 50, 50);
 		slideshow.setIcon(new ImageIcon("icons/slideshow.png"));
 		slideshow.setActionCommand("slideshow");
 		slideshow.addActionListener(this);
-		this.getContentPane().add(slideshow);
+		this.lpane.add(slideshow);
 		
-		ssInterval.setBounds(70, 160, 100, 20);
+		ssInterval.setBounds(165, 225, 50, 20);
 		ssInterval.setText("1000");
-		this.getContentPane().add(ssInterval);
+		this.lpane.add(ssInterval);
 
-		playStop.setBounds(170,160,40,40);
+		playStop.setBounds(165,170,50,50);
 		playStop.setActionCommand("play/stop");
 		playStop.addActionListener(this);
 		playStop.setVisible(false);
-		this.getContentPane().add(playStop);
+		this.lpane.add(playStop);
 		
-		browsebtn.setBounds(40, 190, 80, 30);
-		browsebtn.setText("Browse");
-		browsebtn.setActionCommand("browse");
-		browsebtn.addActionListener(this);
-		this.getContentPane().add(browsebtn);
 		
-		fileUploadName.setBounds(130,190,120,30);
-		fileUploadName.setFont(new Font("Serif",Font.PLAIN,10));
-		fileUploadName.setText("NONE");
-		this.getContentPane().add(fileUploadName);
 		
-		uploadbtn.setBounds(260, 190, 80, 30);
-		uploadbtn.setText("Upload");
-		uploadbtn.setActionCommand("upload");
-		uploadbtn.addActionListener(this);
-		this.getContentPane().add(uploadbtn);
+		image.setBounds(0, 275, 400, 200);
+		this.lpane.add(image);
+		//this.repaint();
 		
-		image.setBounds(0, 250, 400, 200);
-		this.getContentPane().add(image);
-		this.repaint();
+		background.setBounds(0,0,400,500);
+		background.setIcon(new ImageIcon("icons/bg.png"));
+		this.lpane.add(background);
+		
+		frameHeader.setBounds(0,0,370,40);
+		frameHeader.addMouseListener(new MouseAdapter() {
+	        public void mousePressed(MouseEvent e) {
+	            initialClick = e.getPoint();
+	            getComponentAt(initialClick);
+	        }
+	    });
+		frameHeader.addMouseMotionListener(this);
+		this.lpane.add(frameHeader);
 		
 		this.worker.addPropertyChangeListener(this);
 		this.worker.execute();
@@ -199,7 +236,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	public void propertyChange(PropertyChangeEvent arg0) {
 		if("fileName".equals(arg0.getPropertyName())){
 			this.fileName.setText("FILE NAME: "+((String) arg0.getNewValue()).substring(9));
-			repaint();
+			//repaint();
 		}
 		else if("ssInterval".equals(arg0.getPropertyName())) {
 			client.sentence = ssInterval.getText();
@@ -207,6 +244,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 				client.send();
 			} catch (Exception e) {}
 		}
+		
 		else if("complete".equals(arg0.getPropertyName())) {
 			InputStream in = new ByteArrayInputStream(client.imageData);
 			BufferedImage bImageFromConvert = null;
@@ -220,6 +258,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			this.image.setIcon(new ImageIcon(bImageFromConvert.getScaledInstance(400, 200, Image.SCALE_DEFAULT)));
 			this.repaint();
 		}
+		
 		else if("goupload".equals(arg0.getPropertyName())) {
 			System.out.println("upload time");
 			try {
@@ -252,13 +291,14 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 				            }
 							break;
 			case "upload": if(fileUploadName.getText().equals("NONE")) {
-						JOptionPane.showMessageDialog(this, "No image selected!");
-						return;
-					}
-					client.sentence = UDPClient.STARTUPLOAD;
-					try {
-						client.send();
-					}catch(Exception ex){} break;
+								JOptionPane.showMessageDialog(this, "No image selected!");
+								return;
+							}
+							client.sentence = UDPClient.STARTUPLOAD;
+							try {
+								client.send();
+							}catch(Exception ex){} 
+							break;
 			case "imagetype": slideshow.setVisible(true);  //TODO: send ping shit
 							  ssInterval.setVisible(true);
 							  playStop.setVisible(false);
@@ -335,6 +375,26 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 							}
 		}
 		
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent arg0) {
+		// get location of Window
+        int thisX = this.getLocation().x;
+        int thisY = this.getLocation().y;
+
+        // Determine how much the mouse moved since the initial click
+        int xMoved = (thisX + arg0.getX()) - (thisX + initialClick.x);
+        int yMoved = (thisY + arg0.getY()) - (thisY + initialClick.y);
+        // Move window to this position
+        int X = thisX + xMoved;
+        int Y = thisY + yMoved;
+        this.setLocation(X, Y);
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent arg0) {
+		//NO IMPLEMENTATION HEHEIHUH
 	}
 
 
