@@ -30,7 +30,7 @@ public class SlideShow implements ActionListener{
 		if(frame.mediaIndex < frame.storedImages.size()-1) {
 			frame.next();
 			try {
-				server.sendData();
+				server.sendFileName();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
