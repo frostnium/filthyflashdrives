@@ -29,7 +29,6 @@ public class ServerSwingWorker extends SwingWorker<Void, Void> {
 			server.port = receivePacket.getPort(); 
 			
 			if(server.imageReceivingMode) {
-				server.receiveImageData(receivePacket);
 				if(sentence.substring(0, 10).equals("TRCOMPLETE")) {
 					System.out.println("COMPLETE");
 					server.imageReceivingMode = false;
@@ -48,6 +47,8 @@ public class ServerSwingWorker extends SwingWorker<Void, Void> {
 					ImageViewer iViewer = (ImageViewer) server.media.get(server.mediaMode);
 					iViewer.refreshImageList();
 				}
+				else
+					server.receiveImageData(receivePacket);
 			}
 			else		
 				server.initCommand(sentence);
