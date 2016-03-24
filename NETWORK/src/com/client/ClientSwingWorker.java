@@ -1,6 +1,12 @@
 package com.client;
 
+import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import javax.swing.SwingWorker;
+
+import com.mp1.Global;
 
 public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
@@ -19,6 +25,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		while(true){
 			DatagramPacket receivePacket = client.receive();
 			String data = new String(receivePacket.getData()).trim();
+			System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
 			if(data.trim().equals("GOUPLOAD")) {
 				firePropertyChange("goupload", fileName, data);
 			}
