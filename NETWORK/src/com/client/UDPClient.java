@@ -1,7 +1,18 @@
 package com.client;
 
 
-import java.net.*; 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import javax.imageio.ImageIO;
+
+import com.mp1.FileType;
+import com.mp1.Global; 
 public class UDPClient {    
 	public static final String NEXT = "next";
 	public static final String PREV = "prev";
@@ -20,13 +31,16 @@ public class UDPClient {
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
 	public byte[] imageData;
-	
+		
 	public UDPClient() throws Exception{
 		this.sendData = new byte[1512];
 		this.receiveData = new byte[1512];
 		this.clientSocket = new DatagramSocket();
 		this.IPAddress = InetAddress.getByName("localhost");
 		this.sentence = "";
+		System.out.println(clientSocket.getSendBufferSize());
+		System.out.println(clientSocket.getReceiveBufferSize());
+
 	}
 	
 	public void send() throws Exception {
