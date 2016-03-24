@@ -22,15 +22,15 @@ public class UDPClient {
 	public byte[] imageData;
 	
 	public UDPClient() throws Exception{
-		this.sendData = new byte[1500];
-		this.receiveData = new byte[1500];
+		this.sendData = new byte[1512];
+		this.receiveData = new byte[1512];
 		this.clientSocket = new DatagramSocket();
 		this.IPAddress = InetAddress.getByName("localhost");
 		this.sentence = "";
 	}
 	
 	public void send() throws Exception {
-		this.sendData = new byte[1500];
+		this.sendData = new byte[1512];
 		sendData = sentence.getBytes();       
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9999);       
 		clientSocket.send(sendPacket);       
@@ -47,11 +47,20 @@ public class UDPClient {
 		DatagramPacket sendPacket;
 		System.out.println("IMAGE LENgTH: "+bytes.length);
 		int chunksReceived = 0;
+		int seqNum = 0;
+		int ackNum = 0;
 		do {
-			sendData = new byte[1500];
-			sendData = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendData = new byte[0];
+			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(ackNum).array());
+			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(seqNum).array());
+			byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(dataChunk.length).array());
+			sendData = Global.concat(sendData, dataChunk);
+			seqNum++;
+			ackNum++;
 			sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9999);
 			clientSocket.send(sendPacket);
+			System.out.println("SENT! "+sendData.length);
 			chunksReceived++;
 			if(interval + addend > bytes.length) 
 				addend = bytes.length - interval;
@@ -78,7 +87,7 @@ public class UDPClient {
 	public DatagramPacket receive() throws Exception {
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);       
 		clientSocket.receive(receivePacket); 
-		this.receiveData = new byte[1500];
+		this.receiveData = new byte[1512];
 		return receivePacket;
 	}
 	
