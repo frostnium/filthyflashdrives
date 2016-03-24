@@ -1,7 +1,10 @@
 package com.client;
 
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -18,10 +21,20 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JOptionPane;
+import javax.swing.JRadioButton;
+import javax.swing.JTextArea;
+import javax.swing.SwingWorker;
 
 import com.mp1.CustomFilter;
-import com.mp1.Global;
+import com.mp1.UDPCommands;
 
 public class ClientFrame extends JFrame implements ActionListener, PropertyChangeListener, MouseMotionListener{
 	
@@ -236,12 +249,10 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 	public void propertyChange(PropertyChangeEvent arg0) {
 		if("fileName".equals(arg0.getPropertyName())){
 			this.fileName.setText("FILE NAME: "+((String) arg0.getNewValue()).substring(9));
-			//repaint();
 		}
 		else if("ssInterval".equals(arg0.getPropertyName())) {
-			client.sentence = ssInterval.getText();
 			try {
-				client.send();
+				client.sendCommand(ssInterval.getText());
 			} catch (Exception e) {}
 		}
 		
@@ -252,7 +263,6 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			try {
 				bImageFromConvert = ImageIO.read(in);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -265,7 +275,6 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 			try {
 				client.sendImage(uploadFile);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -295,70 +304,65 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 								JOptionPane.showMessageDialog(this, "No image selected!");
 								return;
 							}
-							client.sentence = UDPClient.STARTUPLOAD;
 							try {
-								client.send();
+								client.sendCommand(UDPCommands.STARTUPLOAD);
 							}catch(Exception ex){} 
 							break;
-			case "imagetype": slideshow.setVisible(true);  //TODO: send ping shit
+			case "imagetype": slideshow.setVisible(true);  
 							  ssInterval.setVisible(true);
 							  playStop.setVisible(false);
-							  client.sentence = UDPClient.IMODE;
 								try {
-									client.send();
+									client.sendCommand(UDPCommands.IMODE);
 								} catch (Exception e1) {}
 							  break;
 				
-			case "vatype": slideshow.setVisible(false);  //TODO: send ping shit
+			case "vatype": slideshow.setVisible(false); 
 						   ssInterval.setVisible(false);
 						   playStop.setVisible(true);
 						   playStop.setIcon(playStopIcons[0]);
-						   client.sentence = UDPClient.VMODE;
 							try {
-								client.send();
+								client.sendCommand(UDPCommands.VMODE);
 							} catch (Exception e1) {}
 						   break;
 		
 			case "play/stop": if(playStop.getIcon().equals(playStopIcons[0])) { //TODO: send ping shit
 								playStop.setIcon(playStopIcons[1]);
-								client.sentence = UDPClient.PLAY;
-						}
+								 try {
+										client.sendCommand(UDPCommands.PLAY);
+									} catch (Exception e1) {}
+								}
 							  else {
 								  playStop.setIcon(playStopIcons[0]);
-								  client.sentence = UDPClient.PAUSE;
+								  try {
+										client.sendCommand(UDPCommands.PAUSE);
+									} catch (Exception e1) {}
 							  }
-							  try {
-								client.send();
-							} catch (Exception e1) {}
+							  
 							  break;
 				
-			case "next": client.sentence = UDPClient.NEXT;
-							if(fileType[1].isSelected())
-								playStop.setIcon(playStopIcons[0]);
-							try {
-								client.send();
-							}catch(Exception ex){} break;
-			case "prev": client.sentence = UDPClient.PREV;
-							if(fileType[1].isSelected())
-								playStop.setIcon(playStopIcons[0]);
-							try {
-								client.send();
-							}catch(Exception ex){} break;
-			case "exit": client.sentence = UDPClient.EXIT;
-							try {
-								client.send();
-							} catch (Exception e) {}
-							client.close();
-							System.exit(1); break;
+			case "next": if(fileType[1].isSelected())
+							playStop.setIcon(playStopIcons[0]);
+						 try {
+							 client.sendCommand(UDPCommands.NEXT);
+						 }catch(Exception ex){} break;
+			case "prev": if(fileType[1].isSelected())
+						 	playStop.setIcon(playStopIcons[0]);
+						 try {
+							 client.sendCommand(UDPCommands.PREV);
+						 }catch(Exception ex){} break;
+			case "exit": try {
+							 client.sendCommand(UDPCommands.EXIT);
+						 } catch (Exception e) {}
+						 client.close();
+						 System.exit(1); break;
 			case "slideshow": try {
 								Integer.parseInt(ssInterval.getText());
 							}catch(NumberFormatException ex) {
 								JOptionPane.showMessageDialog(this, "Invalid input!");
 								return;
 							}
-							client.sentence = UDPClient.SSHOW;
 							try {
-								client.send();
+								client.sendCommand(UDPCommands.SSHOW);
 							}catch(Exception ex){} break;
 			case "connect": try {
 							client.IPAddress=InetAddress.getByName(ipTextArea.getText());
