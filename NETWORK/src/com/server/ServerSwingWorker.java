@@ -22,6 +22,7 @@ public class ServerSwingWorker extends SwingWorker<Void, Void> {
 	@Override
 	protected Void doInBackground() throws Exception {
 		while(true){
+			server.receiveData = new byte[1512];
 			DatagramPacket receivePacket = new DatagramPacket(server.receiveData, server.receiveData.length);                   			
 			server.serverSocket.receive(receivePacket);                   
 			String sentence = new String( receivePacket.getData()).trim();                   
@@ -46,6 +47,12 @@ public class ServerSwingWorker extends SwingWorker<Void, Void> {
 					
 					ImageViewer iViewer = (ImageViewer) server.media.get(server.mediaMode);
 					iViewer.refreshImageList();
+					try {
+						in.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					server.tempImageData = new byte[0];
 				}
 				else
 					server.receiveImageData(receivePacket);
