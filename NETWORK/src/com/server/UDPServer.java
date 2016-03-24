@@ -45,8 +45,8 @@ public class UDPServer {
 		this.media.add(new ImageViewer());
 		this.media.add(new VideoPlayer());
 		this.serverSocket = new DatagramSocket(9999);
-		this.receiveData = new byte[1024];
-		this.sendData = new byte[1024];
+		this.receiveData = new byte[1500];
+		this.sendData = new byte[1500];
 		this.receiveImageData = new byte[1500];
 		this.sendImageData = new byte[1500];
 		this.tempImageData = new byte[0];
@@ -85,6 +85,8 @@ public class UDPServer {
 				
 				ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
 				iViewer.refreshImageList();
+				in.close();
+				tempImageData = new byte[0];
 			}
 			else
 				this.receiveImageData(receivePacket);
