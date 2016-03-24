@@ -73,7 +73,6 @@ public class UDPClient {
 			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(dataChunk.length).array());
 			sendData = Global.concat(sendData, dataChunk);
 			seqNum++;
-			ackNum++;
 			sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9999);
 			clientSocket.send(sendPacket);
 			System.out.println("SENT! "+sendData.length);
