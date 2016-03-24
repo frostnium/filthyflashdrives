@@ -44,7 +44,7 @@ public class UDPServer {
 	private int seqNum;
 	private int ackNum;
 	
-	private SwingWorker<Void, Void> worker;
+	private ServerThread receiverThread;
 	
 	public UDPServer() throws Exception{
 		this.imageReceivingMode = false;
@@ -52,17 +52,16 @@ public class UDPServer {
 		this.media.add(new ImageViewer());
 		this.media.add(new VideoPlayer());
 		this.serverSocket = new DatagramSocket(9999);
-		this.receiveData = new byte[1024];
-		this.receiveImageData = new byte[1500];
+		this.receiveData = new byte[1512];
+		this.receiveImageData = new byte[1512];
 		this.tempImageData = new byte[0];
-		this.worker=new ServerSwingWorker(this);
+		this.receiverThread = new ServerThread(this);
 		this.mediaMode = UDPServer.IMAGE_MODE;
 		
 		this.seqNum=0;
 		this.ackNum=0;
 		
-		this.worker.execute();
-		
+		this.receiverThread.run();
 	}
 	
 	public void sendData(byte[] data) throws IOException{
@@ -107,7 +106,7 @@ public class UDPServer {
 				addend = imgBytes.length - interval;
 			else
 				interval += addend;
-			if(chunksReceived==Global.nChunksBeforeAck){
+			if(chunksReceived==Global.nChunksBeforeBuffer){
 				try {
 					Thread.sleep(Global.millsToBuffer);
 				} catch (InterruptedException e) {
