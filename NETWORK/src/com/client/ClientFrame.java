@@ -246,6 +246,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		}
 		
 		else if("complete".equals(arg0.getPropertyName())) {
+			System.out.println("IMAGE TRANSFER COMPLETE");
 			InputStream in = new ByteArrayInputStream(client.imageData);
 			BufferedImage bImageFromConvert = null;
 			try {
