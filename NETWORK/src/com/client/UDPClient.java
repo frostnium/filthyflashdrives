@@ -65,6 +65,8 @@ public class UDPClient {
 		int ackNum = 0;
 		do {
 			sendData = new byte[0];
+			byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
+			ackNum = seqNum+dataChunk.length;
 			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(ackNum).array());
 			sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(seqNum).array());
 			byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
