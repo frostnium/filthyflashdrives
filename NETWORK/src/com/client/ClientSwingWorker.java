@@ -34,7 +34,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 			}
 			else {
 				byte[] imageDataChunk = this.parseBytes(receivePacket.getData());
-				tempData = this.concat(tempData, receivePacket.getData());
+				tempData = this.concat(tempData, imageDataChunk);
 				System.out.println("received packet length: "+tempData.length);
 			}
 		}
