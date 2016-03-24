@@ -54,8 +54,8 @@ public class UDPServer {
 		while(true) {
 			this.receiveData = new byte[1500];
 			this.sendData = new byte[1500];
-			this.receiveImageData = new byte[1500];
-			this.sendImageData = new byte[1500];
+			this.receiveImageData = new byte[1512];
+			this.sendImageData = new byte[1512];
 			this.receive();
 		}
 	}
@@ -68,7 +68,6 @@ public class UDPServer {
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		if(imageReceivingMode) {
-			this.receiveImageData(receivePacket);
 			if(sentence.substring(0, 10).equals("TRCOMPLETE")) {
 				System.out.println("COMPLETEE");
 				imageReceivingMode = false;
@@ -87,6 +86,8 @@ public class UDPServer {
 				ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
 				iViewer.refreshImageList();
 			}
+			else
+				this.receiveImageData(receivePacket);
 		}
 		else		
 			this.initCommand(sentence);
@@ -102,6 +103,8 @@ public class UDPServer {
 	}
 	
 	public void sendImage() throws IOException {
+		if(mediaMode == VIDEO_MODE) 
+			return;
 		File imageFile = media.get(mediaMode).mediaFiles[media.get(mediaMode).mediaIndex];
 		BufferedImage img = ImageIO.read(imageFile);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();        
@@ -113,18 +116,27 @@ public class UDPServer {
 		DatagramPacket sendPacket;
 		
 		int chunksReceived = 0;
+		int seqNum = 0;
+		int ackNum = 0;
 		System.out.println("IMAGE LENgTH: "+bytes.length);
 		do {
-			sendImageData = new byte[1500];
-			sendImageData = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendImageData = new byte[0];
+			sendImageData = Global.concat(sendImageData, ByteBuffer.allocate(4).putInt(ackNum).array());
+			sendImageData = Global.concat(sendImageData, ByteBuffer.allocate(4).putInt(seqNum).array());
+			byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
+			sendImageData = Global.concat(sendImageData, ByteBuffer.allocate(4).putInt(dataChunk.length).array());
+			sendImageData = Global.concat(sendImageData, dataChunk);
 			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
 			serverSocket.send(sendPacket);
+			System.out.println("SENT!! "+sendImageData.length);
+			seqNum++;
+			ackNum++;
 			chunksReceived++;
 			if(interval + addend > bytes.length) 
 				addend = bytes.length - interval;
 			else
 				interval += addend;
-			if(chunksReceived==Global.nChunksBeforeAck){
+			if(chunksReceived==Global.nChunksBeforeBuffer){
 				try {
 					Thread.sleep(Global.millsToBuffer);
 				} catch (InterruptedException e) {
@@ -142,7 +154,21 @@ public class UDPServer {
 	}
 	
 	public void receiveImageData(DatagramPacket receivePacket) {
-		tempImageData = Global.concat(tempImageData, receivePacket.getData());
+		byte[] imageDataChunk = this.parseBytes(receivePacket.getData());
+		tempImageData = Global.concat(tempImageData, imageDataChunk);
+	}
+	
+	public byte[] parseBytes(byte[] bytes) {
+		byte[] ackBytes = Arrays.copyOfRange(bytes, 0, 4);
+		byte[] seqBytes = Arrays.copyOfRange(bytes, 4, 8);
+		byte[] lengthBytes = Arrays.copyOfRange(bytes, 8, 12);
+		int ackNum = ByteBuffer.wrap(ackBytes).getInt();
+		System.out.println("PACKET ACK: "+ackNum);
+		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
+		System.out.println("PACKET SEQ: "+seqNum);
+		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+		System.out.println("PACKET DATA LENGTH: "+lengthNum);
+		return Arrays.copyOfRange(bytes, 12, bytes.length);
 	}
 	
 	public int reqandgetInterval() throws IOException {
