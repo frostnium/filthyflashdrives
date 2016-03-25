@@ -10,6 +10,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.SynchronousQueue;
@@ -20,17 +22,21 @@ import com.mp1.FileType;
 import com.mp1.Global; 
 public class UDPClient {    
 	
+	public final long TIMEOUT = 3000;
+	
 	public byte[] receiveData;
 	public DatagramSocket clientSocket;       
 	public InetAddress IPAddress;
 	public byte[] imageData;
 	public Queue<byte[]> window;	
-	
+	public Timer t;
+
 	public UDPClient() throws Exception{
 		this.window=new ConcurrentLinkedQueue<byte[]>();
 		this.receiveData = new byte[1512];
 		this.clientSocket = new DatagramSocket();
 		this.IPAddress = InetAddress.getByName("localhost");
+		this.t = new Timer();
 		System.out.println(clientSocket.getSendBufferSize());
 		System.out.println(clientSocket.getReceiveBufferSize());
 
@@ -58,6 +64,9 @@ public class UDPClient {
 		
 		do { //TODO: addhere
 			if(window.size()<5){
+				t = new Timer();
+				t.schedule(new TimeoutTask(window, this),TIMEOUT);
+				
 				byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
 				sendData = new byte[0];
 			//	sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(seqNum+dataChunk.length).array());
@@ -66,21 +75,34 @@ public class UDPClient {
 				sendData = Global.concat(sendData, dataChunk);
 				window.add(sendData);
 				this.sendData(sendData);
-				System.out.println("SENT SEQ: "+seqNum);
+				System.out.println("====SENT SEQ: "+seqNum);
 				seqNum+=dataChunk.length;
 				if(interval + addend > bytes.length) 
 					addend = bytes.length - interval;
 				else
 					interval += addend;
 			}
-		}while(interval < bytes.length || window.isEmpty());
-		
+		}while(interval < bytes.length || !window.isEmpty());
+		t.purge();
+		System.out.println("FINAL WINDOW SIZE: "+window.size());
 		System.out.println("DONE");
 		String message = "TRCOMPLETE"+image.getName();
 		sendData = message.getBytes();    
 		this.sendData(sendData);
 		this.window.clear();
 	}
+	/*
+	public void timeout(){
+		Queue<byte[]> winClone=new ConcurrentLinkedQueue<byte[]>(window);
+		System.out.println("==PACKET TIMEOUT!");
+		while(!winClone.isEmpty()){
+			try {
+				sendData(winClone.remove());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}*/
 	
 	public byte[] getImageBytes(File image) throws IOException { 
 		BufferedImage img = ImageIO.read(image);
