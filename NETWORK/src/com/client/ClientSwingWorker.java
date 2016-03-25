@@ -34,7 +34,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 				isGibberish = false;
 				System.out.println("string packet");
 			}
-			System.out.println("PACKET RECEIVED: "+data);
+			//System.out.println("RECEIVED PACKET LENGTH: ");
 			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
 				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
