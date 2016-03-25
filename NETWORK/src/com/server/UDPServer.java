@@ -152,13 +152,13 @@ public class UDPServer {
 		serverSocket.send(sendPacket); 
 	}
 	
-	public void receiveImageData(DatagramPacket receivePacket) {
+	public void receiveImageData(DatagramPacket receivePacket) throws IOException {
 		byte[] imageDataChunk = parseBytes(receivePacket.getData());
 		tempImageData = Global.concat(tempImageData, imageDataChunk);
 		sendAck(receivePacket);
 	}
 	
-	public void sendAck(DatagramPacket receivePacket){
+	public void sendAck(DatagramPacket receivePacket) throws IOException{
 		byte[] imageDataChunk = receivePacket.getData();
 		byte[] seqBytes = Arrays.copyOfRange(imageDataChunk, 0, 4);
 		byte[] lengthBytes = Arrays.copyOfRange(imageDataChunk, 4, 8);
@@ -168,9 +168,12 @@ public class UDPServer {
 		System.out.println("PACKET DATA LENGTH: "+lengthNum);
 		int ackNum = seqNum+lengthNum;
 		System.out.println("PACKET ACK: "+ackNum);
+		System.out.println("----------------------------------------------------");
 		byte[] ackData=new byte[0];
 		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(ackNum).array());
 		ackData = Global.concat(ackData, new String("ACK").getBytes());
+		DatagramPacket sendPacket = new DatagramPacket(ackData, ackData.length, tempIP, port);                   		
+		serverSocket.send(sendPacket); 
 	}
 	
 	public byte[] parseBytes(byte[] bytes) {
