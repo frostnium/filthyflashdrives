@@ -11,8 +11,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -22,6 +26,11 @@ import com.mp1.SlideShow;
 
 
 public class UDPServer {   
+	
+	
+	public static final int LOSS_PROBABILITY = 0;
+	
+	private Random rand;
 	
 	public static final int IMAGE_MODE = 0;
 	public static final int VIDEO_MODE = 1;
@@ -42,6 +51,9 @@ public class UDPServer {
 	private String receivedFileName;
 	boolean imageReceivingMode;
 	
+	private int ackNum;
+	private DatagramPacket ackPacket;
+	
 	public UDPServer() throws Exception{
 		this.imageReceivingMode = false;
 		this.media = new ArrayList<ServerMedia>();
@@ -54,6 +66,9 @@ public class UDPServer {
 		this.sendImageData = new byte[1500];
 		this.tempImageData = new byte[0];
 		this.mediaMode = UDPServer.IMAGE_MODE;
+		this.ackNum=0;
+		this.ackPacket=null;
+		this.rand = new Random();
 		while(true) {
 			this.receiveData = new byte[1508];
 			this.sendData = new byte[1500];
@@ -91,8 +106,14 @@ public class UDPServer {
 				in.close();
 				tempImageData = new byte[0];
 			}
-			else
-				this.receiveImageData(receivePacket);
+			else{
+				if(LOSS_PROBABILITY>rand.nextInt(100)&&this.ackNum!=0){ //TODO: loss probability
+					Date date= new Date();
+					System.out.println("LOST:: SEQ: "+retrieveSeq(receivePacket.getData())+" || "+new Timestamp(date.getTime()));
+				}
+				else
+					this.receiveImageData(receivePacket);
+			}
 		}
 		else		
 			this.initCommand(sentence);
@@ -153,30 +174,46 @@ public class UDPServer {
 	}
 	
 	public void receiveImageData(DatagramPacket receivePacket) throws IOException {
-		byte[] imageDataChunk = parseBytes(receivePacket.getData());
-		tempImageData = Global.concat(tempImageData, imageDataChunk);
-		sendAck(receivePacket);
+		if(retrieveSeq(receivePacket.getData())!=this.ackNum){ //receives out of order packet
+			System.out.println("loss control");
+			serverSocket.send(this.ackPacket);
+		}
+		else{ //receives in order packet
+			byte[] imageDataChunk = retrieveData(receivePacket.getData());
+			tempImageData = Global.concat(tempImageData, imageDataChunk);
+			this.ackPacket=produceAckPacket(receivePacket);
+			serverSocket.send(this.ackPacket);
+		}
 	}
 	
-	public void sendAck(DatagramPacket receivePacket) throws IOException{
-		byte[] imageDataChunk = receivePacket.getData();
-		byte[] seqBytes = Arrays.copyOfRange(imageDataChunk, 0, 4);
-		byte[] lengthBytes = Arrays.copyOfRange(imageDataChunk, 4, 8);
-		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
-		System.out.println("PACKET SEQ: "+seqNum);
-		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-		System.out.println("PACKET DATA LENGTH: "+lengthNum);
-		int ackNum = seqNum+lengthNum;
-		System.out.println("PACKET ACK: "+ackNum);
+	public DatagramPacket produceAckPacket(DatagramPacket receivePacket) throws IOException{
+		int seqNum = retrieveSeq(receivePacket.getData());
+		System.out.println("RECEIVED PACKET SEQ: "+seqNum);
+		int lengthNum = retrieveLength(receivePacket.getData());
+		System.out.println("RECEIVED PACKET DATA LENGTH: "+lengthNum);
+		this.ackNum = seqNum+lengthNum;
+		System.out.println("SEND PACKET ACK: "+ackNum);
 		System.out.println("----------------------------------------------------");
 		byte[] ackData=new byte[0];
 		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(ackNum).array());
 		ackData = Global.concat(ackData, new String("ACK").getBytes());
 		DatagramPacket sendPacket = new DatagramPacket(ackData, ackData.length, tempIP, port);                   		
-		serverSocket.send(sendPacket); 
+		return sendPacket;
 	}
 	
-	public byte[] parseBytes(byte[] bytes) {
+	private int retrieveSeq(byte[] bytes){
+		byte[] seqBytes = Arrays.copyOfRange(bytes, 0, 4);
+		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
+		return seqNum;
+	}
+	
+	private int retrieveLength(byte[] bytes){
+		byte[] lengthBytes = Arrays.copyOfRange(bytes, 4, 8);
+		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+		return lengthNum;
+	}
+	
+	private byte[] retrieveData(byte[] bytes) {
 		/*byte[] ackBytes = Arrays.copyOfRange(bytes, 0, 4);
 		byte[] seqBytes = Arrays.copyOfRange(bytes, 0, 4);
 		byte[] lengthBytes = Arrays.copyOfRange(bytes, 4, 8);
