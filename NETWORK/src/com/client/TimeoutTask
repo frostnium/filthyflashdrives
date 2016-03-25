@@ -1,0 +1,29 @@
+package com.client;
+
+import java.io.IOException;
+import java.util.Queue;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+public class TimeoutTask extends TimerTask {
+
+	Queue<byte[]> winClone;
+	private UDPClient client;
+	public TimeoutTask(Queue<byte[]> window,UDPClient client) {
+		this.winClone=new ConcurrentLinkedQueue<byte[]>(window);
+		this.client=client;
+	}
+
+	@Override
+	public void run() {
+		while(!winClone.isEmpty()){
+			try {
+				client.sendData(winClone.remove());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+}
