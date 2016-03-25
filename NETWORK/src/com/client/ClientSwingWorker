@@ -22,11 +22,22 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 	protected Void doInBackground() throws Exception {
 		String fileName = null;
 		while(true){
-			
 			DatagramPacket receivePacket = client.receive();
 			String data = new String(receivePacket.getData()).trim();
-			System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
-			if(data.trim().equals("GOUPLOAD")) {
+		//	System.out.println("PACKET RECEIVED: "+new String(receivePacket.getData()));
+			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
+				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
+				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
+				System.out.println("PACKET ACK: "+ackNum);
+				byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);
+				byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);
+				int seqNum = ByteBuffer.wrap(seqBytes).getInt();
+				int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+				if(seqNum+lengthNum==ackNum){
+					client.window.remove();	
+				}
+			}
+			else if(data.trim().equals("GOUPLOAD")) {
 				firePropertyChange("goupload", null, null);
 			}
 			else if(data.trim().equals("RFINT"))
@@ -39,24 +50,11 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 				System.out.println("COMPLETE");
 				firePropertyChange("complete", null, null);
 			}
-			else if("ACK".equals(new String(parseBytes(receivePacket.getData())).trim())){
-				System.out.println("asd");
-				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
-				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
-				System.out.println("PACKET ACK: "+ackNum);
-				byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);
-				byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);
-				int seqNum = ByteBuffer.wrap(seqBytes).getInt();
-				int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-				if(seqNum==ackNum){
-					System.out.println("asd");
-					client.window.remove();	
-				}
-			}
 			else {
 				byte[] imageDataChunk = receivePacket.getData();
 				tempData = Global.concat(tempData, imageDataChunk);
 			}
+		
 		}
 		
 	}
@@ -71,6 +69,6 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		System.out.println("PACKET SEQ: "+seqNum);
 		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 		System.out.println("PACKET DATA LENGTH: "+lengthNum);*/
-		return Arrays.copyOfRange(bytes, 7, bytes.length);
+		return Arrays.copyOfRange(bytes, 4, bytes.length);
 	}
 }
