@@ -51,7 +51,7 @@ public class UDPClient {
 		byte[] bytes = this.getImageBytes(image);
 		byte[] sendData;
 		
-		int interval = 0, chunksReceived = 0;
+		int interval = 0;
 		int addend = 1500;
 		
 		int seqNum=0;
@@ -71,13 +71,7 @@ public class UDPClient {
 					addend = bytes.length - interval;
 				else
 					interval += addend;
-			} else
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			}
 		}while(interval < bytes.length);
 		
 		System.out.println("DONE");
