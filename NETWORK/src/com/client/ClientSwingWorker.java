@@ -56,14 +56,15 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 						if(seqNum+lengthNum==ackNum){	
 							System.out.println("WINDOW SHIFTED");
 							client.window.remove();	
+							
 						}
 					}
 				}
 				else{
 					this.dupAckCount++;
 					System.out.println("DuplicateAckCount :"+dupAckCount);
-					if(dupAckCount>0){
-						client.sendData(client.window.peek()); //TODO: to test || FAST RETRANSMIT
+					if(dupAckCount>3){ //TODO change this value for fast retransmit
+						client.sendData(client.window.peek()); 
 						this.dupAckCount=0;
 						System.out.println("retransmit finish");
 					}
