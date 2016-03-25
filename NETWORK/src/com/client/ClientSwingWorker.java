@@ -12,10 +12,14 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
 	private UDPClient client;
 	private byte[] tempData;
+	private int latestAckNum;
+	private int dupAckCount;
 	
 	public ClientSwingWorker(UDPClient client){
 		this.client=client;
 		this.tempData = new byte[0];
+		this.latestAckNum=0;
+		this.dupAckCount=0;
 	}
 	
 	@Override
@@ -23,6 +27,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		String fileName = null;
 		boolean isGibberish;
 		while(true){
+			System.out.println("-----------------------------");
 			System.out.println("waiting for packet");
 			DatagramPacket receivePacket = client.receive();
 			String data = new String(receivePacket.getData()).trim();
@@ -34,25 +39,39 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 				isGibberish = false;
 				System.out.println("string packet");
 			}
-			//System.out.println("RECEIVED PACKET LENGTH: ");
 			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
 				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
-				System.out.println("PACKET ACK: "+ackNum);
-				System.out.println("WINDOW SIZE: "+client.window.size());
-				if(!client.window.isEmpty()) {
-					byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
-					byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
-					int seqNum = ByteBuffer.wrap(seqBytes).getInt();	
-					int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-	
-					if(seqNum+lengthNum==ackNum){	
-						client.window.remove();	
+				if(ackNum>latestAckNum){
+					this.latestAckNum=ackNum;
+					this.dupAckCount=0;
+					System.out.println("PACKET ACK: "+ackNum);
+					System.out.println("WINDOW SIZE: "+client.window.size());
+					if(!client.window.isEmpty()) {
+						byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
+						byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
+						int seqNum = ByteBuffer.wrap(seqBytes).getInt();	
+						int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+		
+						if(seqNum+lengthNum==ackNum){	
+							System.out.println("WINDOW SHIFTED");
+							client.window.remove();	
+						}
+					}
+				}
+				else{
+					this.dupAckCount++;
+					System.out.println("DuplicateAckCount :"+dupAckCount);
+					if(dupAckCount>0){
+						client.sendData(client.window.peek()); //TODO: to test || FAST RETRANSMIT
+						this.dupAckCount=0;
+						System.out.println("retransmit finish");
 					}
 				}
 			}
 			else if(!isGibberish) {
 				if(data.trim().equals("GOUPLOAD"))  {
+					this.latestAckNum=0;
 					firePropertyChange("goupload", null, null);
 				}
 				else if(data.trim().equals("RFINT"))
