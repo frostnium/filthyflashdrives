@@ -24,7 +24,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		while(true){
 			DatagramPacket receivePacket = client.receive();
 			String data = new String(receivePacket.getData()).trim();
-		//	System.out.println("PACKET RECEIVED: "+new String(receivePacket.getData()));
+			System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
 			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
 				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
@@ -35,6 +35,7 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 				int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 				if(seqNum+lengthNum==ackNum){
 					client.window.remove();	
+					System.out.println(client.window.size());//TODO:remove
 				}
 			}
 			else if(data.trim().equals("GOUPLOAD")) {
