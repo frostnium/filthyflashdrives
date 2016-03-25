@@ -28,7 +28,7 @@ import com.mp1.SlideShow;
 public class UDPServer {   
 	
 	
-	public static final int LOSS_PROBABILITY = 0;
+	public static final int LOSS_PROBABILITY = 30;
 	
 	private Random rand;
 	
@@ -174,9 +174,12 @@ public class UDPServer {
 	}
 	
 	public void receiveImageData(DatagramPacket receivePacket) throws IOException {
-		if(retrieveSeq(receivePacket.getData())!=this.ackNum){ //receives out of order packet
+		if(retrieveSeq(receivePacket.getData())>this.ackNum){ //receives out of order packet
 			System.out.println("loss control");
 			serverSocket.send(this.ackPacket);
+		}
+		else if(retrieveSeq(receivePacket.getData())<this.ackNum){
+			//PREMATURE TIMEOUT
 		}
 		else{ //receives in order packet
 			byte[] imageDataChunk = retrieveData(receivePacket.getData());
