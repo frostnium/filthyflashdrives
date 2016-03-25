@@ -47,7 +47,7 @@ public class UDPClient {
 		this.sendData(sendData);
 	}
 	
-	public void sendImage(File image) throws IOException {
+	public synchronized void sendImage(File image) throws IOException {
 		byte[] bytes = this.getImageBytes(image);
 		byte[] sendData;
 		
@@ -72,7 +72,7 @@ public class UDPClient {
 				else
 					interval += addend;
 			}
-		}while(interval < bytes.length);
+		}while(interval < bytes.length || window.isEmpty());
 		
 		System.out.println("DONE");
 		String message = "TRCOMPLETE"+image.getName();
