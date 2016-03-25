@@ -66,6 +66,7 @@ public class UDPClient {
 				sendData = Global.concat(sendData, dataChunk);
 				window.add(sendData);
 				this.sendData(sendData);
+				System.out.println("SENT SEQ: "+seqNum);
 				seqNum+=dataChunk.length;
 				if(interval + addend > bytes.length) 
 					addend = bytes.length - interval;
