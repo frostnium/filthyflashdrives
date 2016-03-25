@@ -1,29 +1,76 @@
 package com.client;
 
+import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import javax.swing.SwingWorker;
+
+import com.mp1.Global;
 
 public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
 	private UDPClient client;
+	private byte[] tempData;
 	
 	public ClientSwingWorker(UDPClient client){
 		this.client=client;
+		this.tempData = new byte[0];
 	}
 	
 	@Override
 	protected Void doInBackground() throws Exception {
 		String fileName = null;
-		String ssInterval = null;
 		while(true){
-			String data=client.receive();
-			if(data.trim().equals("RFINT"))
-				firePropertyChange("ssInterval", ssInterval, data);
-			else
+			
+			DatagramPacket receivePacket = client.receive();
+			String data = new String(receivePacket.getData()).trim();
+			System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
+			if(data.trim().equals("GOUPLOAD")) {
+				firePropertyChange("goupload", null, null);
+			}
+			else if(data.trim().equals("RFINT"))
+				firePropertyChange("ssInterval", null, null);
+			else if(data.trim().substring(0, 9).equals("FILENAME:"))
 				firePropertyChange("fileName", fileName, data);
-			fileName=data;
-			System.out.println("FROM SERVER: " + fileName);   
+			else if(data.trim().equals("TRCOMPLETE")) {
+				client.imageData = tempData;
+				tempData = new byte[0];
+				System.out.println("COMPLETE");
+				firePropertyChange("complete", null, null);
+			}
+			else if("ACK".equals(new String(parseBytes(receivePacket.getData())).trim())){
+				System.out.println("asd");
+				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
+				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
+				System.out.println("PACKET ACK: "+ackNum);
+				byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);
+				byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);
+				int seqNum = ByteBuffer.wrap(seqBytes).getInt();
+				int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+				if(seqNum==ackNum){
+					System.out.println("asd");
+					client.window.remove();	
+				}
+			}
+			else {
+				byte[] imageDataChunk = receivePacket.getData();
+				tempData = Global.concat(tempData, imageDataChunk);
+			}
 		}
 		
 	}
-
+	
+	public byte[] parseBytes(byte[] bytes) {
+		/*byte[] ackBytes = Arrays.copyOfRange(bytes, 0, 4);
+		byte[] seqBytes = Arrays.copyOfRange(bytes, 4, 8);
+		byte[] lengthBytes = Arrays.copyOfRange(bytes, 8, 12);
+		int ackNum = ByteBuffer.wrap(ackBytes).getInt();
+		System.out.println("PACKET ACK: "+ackNum);
+		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
+		System.out.println("PACKET SEQ: "+seqNum);
+		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+		System.out.println("PACKET DATA LENGTH: "+lengthNum);*/
+		return Arrays.copyOfRange(bytes, 7, bytes.length);
+	}
 }
