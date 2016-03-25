@@ -77,8 +77,8 @@ public class UDPClient {
 		System.out.println("DONE");
 		String message = "TRCOMPLETE"+image.getName();
 		sendData = message.getBytes();    
-		this.window.clear();
 		this.sendData(sendData);
+		this.window.clear();
 	}
 	
 	public byte[] getImageBytes(File image) throws IOException { 
