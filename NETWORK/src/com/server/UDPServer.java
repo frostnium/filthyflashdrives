@@ -200,6 +200,7 @@ public class UDPServer {
 		System.out.println("----------------------------------------------------");
 		byte[] ackData=new byte[0];
 		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(ackNum).array());
+		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(this.serverSocket.getReceiveBufferSize()).array());
 		ackData = Global.concat(ackData, new String("ACK").getBytes());
 		DatagramPacket sendPacket = new DatagramPacket(ackData, ackData.length, tempIP, port);                   		
 		return sendPacket;
