@@ -28,7 +28,7 @@ import com.mp1.SlideShow;
 public class UDPServer {   
 	
 	
-	public static final int LOSS_PROBABILITY = 30;
+	public static final int LOSS_PROBABILITY = Global.SERVER_LOSS_PROBABILITY;
 	
 	private Random rand;
 	
