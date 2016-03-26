@@ -2,8 +2,11 @@ package com.client;
 
 import java.io.IOException;
 import java.util.Queue;
+import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import com.mp1.Global;
 
 public class TimeoutTask extends TimerTask {
 
@@ -23,7 +26,8 @@ public class TimeoutTask extends TimerTask {
 				e.printStackTrace();
 			}
 		}
-
+		client.t = new Timer();
+		client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
 	}
 
 }
