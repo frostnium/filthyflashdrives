@@ -12,6 +12,9 @@ public class Global {
 	public static int nChunksBeforeBuffer=1;
 	public static long millsToBuffer=25;
 	public static final long TIMEOUT = 2000;
+	public static final int SERVER_LOSS_PROBABILITY = 10;
+	public static final int CLIENT_LOSS_PROBABILITY = 10;
+	
 	
 	public static byte[] concat(byte[] a, byte[] b) {
 		   int aLen = a.length;
