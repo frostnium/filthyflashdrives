@@ -82,11 +82,11 @@ public class UDPServer {
 	public void receive() throws Exception{
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
 		serverSocket.receive(receivePacket);                   
-		String sentence = new String( receivePacket.getData()).trim();                   
+		String sentence = new String( receivePacket.getData()).trim();     
 		tempIP = receivePacket.getAddress();                   
 		port = receivePacket.getPort(); 
 		if(imageReceivingMode) {
-			if(sentence.substring(0, 10).equals("TRCOMPLETE")) {
+			if(sentence.length()>=10&&sentence.substring(0, 10).equals("TRCOMPLETE")) {
 				System.out.println("COMPLETEE");
 				imageReceivingMode = false;
 				InputStream in = new ByteArrayInputStream(tempImageData);
@@ -105,6 +105,7 @@ public class UDPServer {
 				iViewer.refreshImageList();
 				in.close();
 				tempImageData = new byte[0];
+				this.ackNum=0;
 			}
 			else{
 				if(LOSS_PROBABILITY>rand.nextInt(100)&&this.ackNum!=0){ //TODO: loss probability
@@ -175,7 +176,7 @@ public class UDPServer {
 	
 	public void receiveImageData(DatagramPacket receivePacket) throws IOException {
 		if(retrieveSeq(receivePacket.getData())>this.ackNum){ //receives out of order packet
-			System.out.println("loss control");
+			System.out.println("out of order");
 			serverSocket.send(this.ackPacket);
 		}
 		else if(retrieveSeq(receivePacket.getData())<this.ackNum){
