@@ -67,27 +67,31 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 							int seqNum = ByteBuffer.wrap(seqBytes).getInt();	
 							int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 			
-							while(seqNum+lengthNum<=ackNum){	//CUMULATIVE ACKS
+							while(seqNum+lengthNum<=ackNum&&!client.window.isEmpty()){	//CUMULATIVE ACKS
 								System.out.println("WINDOW SHIFTED");
 								try{
 								client.t.cancel();
 								}
 								catch(IllegalStateException e){}
+								System.out.println("fuckthat");
 								client.t = new Timer();
 								client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
-								client.window.remove();	
-								
-								seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
-								lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
-								seqNum = ByteBuffer.wrap(seqBytes).getInt();	
-								lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+								System.out.println("fuckme");
+								client.window.poll();
+								if(!client.window.isEmpty()){
+									seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
+									lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
+									seqNum = ByteBuffer.wrap(seqBytes).getInt();	
+									lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+								}
+								System.out.println("fuck");
 							}
 						}
 					}
 					else{
 						this.dupAckCount++;
 						System.out.println("DuplicateAckCount :"+dupAckCount);
-						if(dupAckCount>3){ //TODO change this value for fast retransmit
+						if(dupAckCount>3&&!client.window.isEmpty()){ //TODO change this value for fast retransmit
 							client.sendData(client.window.peek()); 
 							this.dupAckCount=0;
 							System.out.println("retransmit finish");
