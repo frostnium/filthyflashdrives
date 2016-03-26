@@ -22,7 +22,6 @@ import com.mp1.FileType;
 import com.mp1.Global; 
 public class UDPClient {    
 	
-	public final long TIMEOUT = 3000;
 	
 	public byte[] receiveData;
 	public DatagramSocket clientSocket;       
@@ -64,8 +63,10 @@ public class UDPClient {
 		
 		do { //TODO: addhere
 			if(window.size()<5){
-				t = new Timer();
-				t.schedule(new TimeoutTask(window, this),TIMEOUT);
+				if(interval==0){
+					t = new Timer();
+					t.schedule(new TimeoutTask(window, this),Global.TIMEOUT);
+				}
 				
 				byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
 				sendData = new byte[0];
@@ -82,9 +83,17 @@ public class UDPClient {
 				else
 					interval += addend;
 			}
-		}while(interval < bytes.length || !window.isEmpty());
-		t.purge();
+		}while(interval < bytes.length );
+		
 		System.out.println("FINAL WINDOW SIZE: "+window.size());
+		byte[] head=new byte[0];
+		while(!window.isEmpty()){
+			if(!head.equals(window.peek())){
+				t = new Timer();
+				t.schedule(new TimeoutTask(window, this),Global.TIMEOUT);
+				head=window.peek();
+			}	
+		}
 		System.out.println("DONE");
 		String message = "TRCOMPLETE"+image.getName();
 		sendData = message.getBytes();    
