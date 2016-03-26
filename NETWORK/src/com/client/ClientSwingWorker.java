@@ -2,7 +2,10 @@ package com.client;
 
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Random;
 import java.util.Timer;
 
 import javax.swing.SwingWorker;
@@ -11,12 +14,17 @@ import com.mp1.Global;
 
 public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
+	public static final int LOSS_PROBABILITY = Global.CLIENT_LOSS_PROBABILITY;
+	
+	private Random rand;
+	
 	private UDPClient client;
 	private byte[] tempData;
 	private int latestAckNum;
 	private int dupAckCount;
 	
 	public ClientSwingWorker(UDPClient client){
+		this.rand = new Random();
 		this.client=client;
 		this.tempData = new byte[0];
 		this.latestAckNum=0;
@@ -43,37 +51,47 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
 				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
-				if(ackNum>latestAckNum){
-					this.latestAckNum=ackNum;
-					this.dupAckCount=0;
-					System.out.println("PACKET ACK: "+ackNum);
-					System.out.println("WINDOW SIZE: "+client.window.size());
-					if(!client.window.isEmpty()) {
-						byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
-						byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
-						int seqNum = ByteBuffer.wrap(seqBytes).getInt();	
-						int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-		
-						if(seqNum+lengthNum==ackNum){	
-							System.out.println("WINDOW SHIFTED");
-							try{
-							client.t.cancel();
+				if(LOSS_PROBABILITY>rand.nextInt(100)){
+					Date date= new Date();
+					System.out.println("LOST:: ACK: "+ackNum+" || "+new Timestamp(date.getTime()));
+				}
+				else{	
+					if(ackNum>latestAckNum){
+						this.latestAckNum=ackNum;
+						this.dupAckCount=0;
+						System.out.println("PACKET ACK: "+ackNum);
+						System.out.println("WINDOW SIZE: "+client.window.size());
+						if(!client.window.isEmpty()) {
+							byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
+							byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
+							int seqNum = ByteBuffer.wrap(seqBytes).getInt();	
+							int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
+			
+							while(seqNum+lengthNum<=ackNum){	//CUMULATIVE ACKS
+								System.out.println("WINDOW SHIFTED");
+								try{
+								client.t.cancel();
+								}
+								catch(IllegalStateException e){}
+								client.t = new Timer();
+								client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
+								client.window.remove();	
+								
+								seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
+								lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);	
+								seqNum = ByteBuffer.wrap(seqBytes).getInt();	
+								lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 							}
-							catch(IllegalStateException e){}
-							client.t = new Timer();
-							client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
-							client.window.remove();	
-							
 						}
 					}
-				}
-				else{
-					this.dupAckCount++;
-					System.out.println("DuplicateAckCount :"+dupAckCount);
-					if(dupAckCount>3){ //TODO change this value for fast retransmit
-						client.sendData(client.window.peek()); 
-						this.dupAckCount=0;
-						System.out.println("retransmit finish");
+					else{
+						this.dupAckCount++;
+						System.out.println("DuplicateAckCount :"+dupAckCount);
+						if(dupAckCount>3){ //TODO change this value for fast retransmit
+							client.sendData(client.window.peek()); 
+							this.dupAckCount=0;
+							System.out.println("retransmit finish");
+						}
 					}
 				}
 			}
