@@ -50,7 +50,10 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 			}
 			if((new String(parseBytes(receivePacket.getData())).trim()).equals("ACK")){
 				byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
+				byte[] rcvBufferBytes = Arrays.copyOfRange(receivePacket.getData(), 4, 8);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
+				int rcvBuffer = ByteBuffer.wrap(rcvBufferBytes).getInt();
+				System.out.println("RCVBufferSize: "+rcvBuffer);
 				if(LOSS_PROBABILITY>rand.nextInt(100)){
 					Date date= new Date();
 					System.out.println("LOST:: ACK: "+ackNum+" || "+new Timestamp(date.getTime()));
@@ -131,6 +134,6 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		System.out.println("PACKET SEQ: "+seqNum);
 		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 		System.out.println("PACKET DATA LENGTH: "+lengthNum);*/
-		return Arrays.copyOfRange(bytes, 4, bytes.length);
+		return Arrays.copyOfRange(bytes, 8, bytes.length);
 	}
 }
