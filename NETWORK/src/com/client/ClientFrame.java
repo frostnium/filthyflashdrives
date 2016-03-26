@@ -277,100 +277,12 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		
 		else if("goupload".equals(arg0.getPropertyName())) {
 			System.out.println("upload time");
-			Thread t1=new Thread(){
-				public void run(){
-					byte[] bytes = null;
-					try {
-						bytes = client.getImageBytes(uploadFile);
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					byte[] sendData;
-					
-					int interval = 0, chunksReceived = 0;
-					int addend = 1500;
-					
-					int seqNum=0;
-					
-					do { //TODO: addhere
-						if(client.window.size()<5){
-							byte[] dataChunk = Arrays.copyOfRange(bytes, interval, interval+addend);
-							sendData = new byte[0];
-						//	sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(seqNum+dataChunk.length).array());
-							sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(seqNum).array());
-							sendData = Global.concat(sendData, ByteBuffer.allocate(4).putInt(dataChunk.length).array());
-							sendData = Global.concat(sendData, dataChunk);
-							client.window.add(sendData);
-							try {
-								client.sendData(sendData);
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							seqNum+=dataChunk.length;
-							if(interval + addend > bytes.length) 
-								addend = bytes.length - interval;
-							else
-								interval += addend;
-						} else
-							try {
-								wait();
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-					}while(interval < bytes.length);
-					
-					System.out.println("DONE");
-					String message = "TRCOMPLETE"+image.getName();
-					sendData = message.getBytes();    
-					client.window.clear();
-					try {
-						client.sendData(sendData);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			};
-			Thread t2=new Thread(){
-				public void run(){
-					while(true){
-						DatagramPacket receivePacket = null;
-						try {
-							receivePacket = client.receive();
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						String data = new String(receivePacket.getData()).trim();
-						System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
-						if("ACK".equals(new String(Arrays.copyOfRange(receivePacket.getData(), 7, receivePacket.getData().length)).trim())){
-							System.out.println("asd");
-							byte[] ackBytes = Arrays.copyOfRange(receivePacket.getData(), 0, 4);
-							int ackNum=ByteBuffer.wrap(ackBytes).getInt();
-							System.out.println("PACKET ACK: "+ackNum);
-							byte[] seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);
-							byte[] lengthBytes = Arrays.copyOfRange(client.window.peek(), 4, 8);
-							int seqNum = ByteBuffer.wrap(seqBytes).getInt();
-							int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-							if(seqNum==ackNum){
-								System.out.println("asd");
-								client.window.remove();	
-								notify();
-								try {
-									wait();
-								} catch (InterruptedException e) {
-									e.printStackTrace();
-								}
-							}
-						}
-					}
-				}
-			};
-			
-			t1.start();
-			t2.start();
+			try {
+				client.sendImage(uploadFile);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 		}
 		
