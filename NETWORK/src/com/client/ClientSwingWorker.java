@@ -3,6 +3,7 @@ package com.client;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Timer;
 
 import javax.swing.SwingWorker;
 
@@ -55,6 +56,12 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 		
 						if(seqNum+lengthNum==ackNum){	
 							System.out.println("WINDOW SHIFTED");
+							try{
+							client.t.cancel();
+							}
+							catch(IllegalStateException e){}
+							client.t = new Timer();
+							client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
 							client.window.remove();	
 							
 						}
