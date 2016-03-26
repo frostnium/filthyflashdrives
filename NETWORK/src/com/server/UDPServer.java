@@ -180,7 +180,7 @@ public class UDPServer {
 			serverSocket.send(this.ackPacket);
 		}
 		else if(retrieveSeq(receivePacket.getData())<this.ackNum){
-			//PREMATURE TIMEOUT
+			serverSocket.send(this.ackPacket); //PREMATURE TIMEOUT
 		}
 		else{ //receives in order packet
 			byte[] imageDataChunk = retrieveData(receivePacket.getData());
