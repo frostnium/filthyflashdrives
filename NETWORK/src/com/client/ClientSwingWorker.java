@@ -73,10 +73,8 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 								client.t.cancel();
 								}
 								catch(IllegalStateException e){}
-								System.out.println("fuckthat");
 								client.t = new Timer();
 								client.t.schedule(new TimeoutTask(client.window, client),Global.TIMEOUT);
-								System.out.println("fuckme");
 								client.window.poll();
 								if(!client.window.isEmpty()){
 									seqBytes = Arrays.copyOfRange(client.window.peek(), 0, 4);	
@@ -84,7 +82,6 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 									seqNum = ByteBuffer.wrap(seqBytes).getInt();	
 									lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
 								}
-								System.out.println("fuck");
 							}
 						}
 					}
