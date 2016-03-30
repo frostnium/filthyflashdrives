@@ -257,7 +257,7 @@ public class ClientFrame extends JFrame implements ActionListener, PropertyChang
 		}
 		else if("ssInterval".equals(arg0.getPropertyName())) {
 			try {
-				client.sendCommand(ssInterval.getText());
+				client.sendCommand("INT:"+ssInterval.getText());
 			} catch (Exception e) {}
 		}
 		
