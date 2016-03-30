@@ -15,6 +15,7 @@ import com.mp1.Global;
 public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
 	public static final int LOSS_PROBABILITY = Global.CLIENT_LOSS_PROBABILITY;
+	public static final long DELAY = Global.CLIENT_DELAY;
 	
 	private Random rand;
 	
@@ -53,7 +54,10 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 				byte[] rcvBufferBytes = Arrays.copyOfRange(receivePacket.getData(), 4, 8);
 				int ackNum=ByteBuffer.wrap(ackBytes).getInt();
 				int rcvBuffer = ByteBuffer.wrap(rcvBufferBytes).getInt();
-				System.out.println("RCVBufferSize: "+rcvBuffer);
+				if(rcvBuffer==0){
+					System.out.println("CLIENT SLEEP");
+					client.clientThread.sleep(DELAY);
+				}
 				if(LOSS_PROBABILITY>rand.nextInt(100)){
 					Date date= new Date();
 					System.out.println("LOST:: ACK: "+ackNum+" || "+new Timestamp(date.getTime()));
@@ -125,15 +129,6 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 	}
 	
 	public byte[] parseBytes(byte[] bytes) {
-		/*byte[] ackBytes = Arrays.copyOfRange(bytes, 0, 4);
-		byte[] seqBytes = Arrays.copyOfRange(bytes, 4, 8);
-		byte[] lengthBytes = Arrays.copyOfRange(bytes, 8, 12);
-		int ackNum = ByteBuffer.wrap(ackBytes).getInt();
-		System.out.println("PACKET ACK: "+ackNum);
-		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
-		System.out.println("PACKET SEQ: "+seqNum);
-		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-		System.out.println("PACKET DATA LENGTH: "+lengthNum);*/
 		return Arrays.copyOfRange(bytes, 8, bytes.length);
 	}
 }
