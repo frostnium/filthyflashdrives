@@ -29,6 +29,7 @@ public class UDPClient {
 	public byte[] imageData;
 	public Queue<byte[]> window;	
 	public Timer t;
+	public Thread clientThread;
 
 	public UDPClient() throws Exception{
 		this.window=new ConcurrentLinkedQueue<byte[]>();
@@ -36,6 +37,7 @@ public class UDPClient {
 		this.clientSocket = new DatagramSocket();
 		this.IPAddress = InetAddress.getByName("localhost");
 		this.t = new Timer();
+		this.clientThread = Thread.currentThread();
 		System.out.println(clientSocket.getSendBufferSize());
 		System.out.println(clientSocket.getReceiveBufferSize());
 
@@ -85,7 +87,7 @@ public class UDPClient {
 			}
 		}while(interval < bytes.length );
 		
-		System.out.println("FINAL WINDOW SIZE: "+window.size());
+		
 		byte[] head=new byte[0];
 		while(!window.isEmpty()){
 			if(!head.equals(window.peek())){
@@ -94,6 +96,7 @@ public class UDPClient {
 				head=window.peek();
 			}	
 		}
+		System.out.println("FINAL WINDOW SIZE: "+window.size());
 		System.out.println("DONE");
 		String message = "TRCOMPLETE"+image.getName();
 		sendData = message.getBytes();    
