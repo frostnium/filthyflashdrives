@@ -1,6 +1,8 @@
 package com.server;
 
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -25,10 +27,11 @@ import com.mp1.Global;
 import com.mp1.SlideShow;
 
 
-public class UDPServer {   
+public class UDPServer implements PropertyChangeListener{   
 	
 	
 	public static final int LOSS_PROBABILITY = Global.SERVER_LOSS_PROBABILITY;
+	public static final long DELAY = Global.SERVER_DELAY;
 	
 	private Random rand;
 	
@@ -41,11 +44,10 @@ public class UDPServer {
 	public byte[] sendData;
 	
 	public byte[] sendImageData;
-	public byte[] receiveImageData;
 	private byte[] tempImageData;
 	
-	private int port;
-	private InetAddress tempIP;
+	public int port;
+	public InetAddress tempIP;
 	
 	private int mediaMode;
 	private String receivedFileName;
@@ -53,6 +55,8 @@ public class UDPServer {
 	
 	private int ackNum;
 	private DatagramPacket ackPacket;
+	
+	private ServerBuffer buffer;
 	
 	public UDPServer() throws Exception{
 		this.imageReceivingMode = false;
@@ -62,30 +66,32 @@ public class UDPServer {
 		this.serverSocket = new DatagramSocket(9999);
 		this.receiveData = new byte[1508];
 		this.sendData = new byte[1500];
-		this.receiveImageData = new byte[1512];
 		this.sendImageData = new byte[1500];
 		this.tempImageData = new byte[0];
 		this.mediaMode = UDPServer.IMAGE_MODE;
 		this.ackNum=0;
 		this.ackPacket=null;
 		this.rand = new Random();
-		while(true) {
+		this.buffer=new ServerBuffer(this);
+		this.buffer.addPropertyChangeListener(this);
+		this.buffer.execute();
+		/*
+		while(true) { //to remove
 			this.receiveData = new byte[1508];
 			this.sendData = new byte[1500];
 			this.receiveImageData = new byte[1512];
 			this.sendImageData = new byte[1500];
 			this.receive();
-		}
+		}*/
 	}
 	
 	
-	public void receive() throws Exception{
-		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
-		serverSocket.receive(receivePacket);                   
-		String sentence = new String( receivePacket.getData()).trim();     
-		tempIP = receivePacket.getAddress();                   
-		port = receivePacket.getPort(); 
+	public void receive() throws Exception{ //TODO DELAY
+		
 		if(imageReceivingMode) {
+			DatagramPacket receivePacket = this.buffer.getBufferPacket();                   			       
+			String sentence = new String(receivePacket.getData()).trim(); 
+			Thread.sleep(DELAY);
 			if(sentence.length()>=10&&sentence.substring(0, 10).equals("TRCOMPLETE")) {
 				System.out.println("COMPLETEE");
 				imageReceivingMode = false;
@@ -97,7 +103,6 @@ public class UDPServer {
 					File outputfile = new File("images/"+receivedFileName);
 					ImageIO.write(bImageFromConvert, FileType.getExtension(receivedFileName), outputfile);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				
@@ -108,7 +113,7 @@ public class UDPServer {
 				this.ackNum=0;
 			}
 			else{
-				if(LOSS_PROBABILITY>rand.nextInt(100)&&this.ackNum!=0){ //TODO: loss probability
+				if(LOSS_PROBABILITY>rand.nextInt(100)&&this.ackNum!=0){ //LOSS PROBABILITY
 					Date date= new Date();
 					System.out.println("LOST:: SEQ: "+retrieveSeq(receivePacket.getData())+" || "+new Timestamp(date.getTime()));
 				}
@@ -116,8 +121,11 @@ public class UDPServer {
 					this.receiveImageData(receivePacket);
 			}
 		}
-		else		
+		else{	
+			DatagramPacket receivePacket = this.buffer.getPacketReceived();                   			       
+			String sentence = new String(receivePacket.getData()).trim(); 
 			this.initCommand(sentence);
+		}
 	}
 	
 	public void sendData() throws IOException{
@@ -143,7 +151,6 @@ public class UDPServer {
 		
 		DatagramPacket sendPacket;
 		
-		int chunksReceived = 0;
 		System.out.println("IMAGE LENgTH: "+bytes.length);
 		do {
 			sendImageData = new byte[0]; 	
@@ -152,19 +159,10 @@ public class UDPServer {
 			sendPacket = new DatagramPacket(sendImageData, sendImageData.length, tempIP, port);
 			serverSocket.send(sendPacket);
 			System.out.println("SENT!! "+sendImageData.length);
-			chunksReceived++;
 			if(interval + addend > bytes.length) 
 				addend = bytes.length - interval;
 			else
 				interval += addend;
-			if(chunksReceived==Global.nChunksBeforeBuffer){
-				try {
-					Thread.sleep(Global.millsToBuffer);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				chunksReceived=0;
-			}
 		}while(interval < bytes.length);
 		
 		System.out.println("DONE");
@@ -200,7 +198,7 @@ public class UDPServer {
 		System.out.println("----------------------------------------------------");
 		byte[] ackData=new byte[0];
 		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(ackNum).array());
-		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(this.serverSocket.getReceiveBufferSize()).array());
+		ackData = Global.concat(ackData, ByteBuffer.allocate(4).putInt(this.buffer.getBufferSpace()).array());
 		ackData = Global.concat(ackData, new String("ACK").getBytes());
 		DatagramPacket sendPacket = new DatagramPacket(ackData, ackData.length, tempIP, port);                   		
 		return sendPacket;
@@ -219,15 +217,6 @@ public class UDPServer {
 	}
 	
 	private byte[] retrieveData(byte[] bytes) {
-		/*byte[] ackBytes = Arrays.copyOfRange(bytes, 0, 4);
-		byte[] seqBytes = Arrays.copyOfRange(bytes, 0, 4);
-		byte[] lengthBytes = Arrays.copyOfRange(bytes, 4, 8);
-		int seqNum = ByteBuffer.wrap(seqBytes).getInt();
-		System.out.println("PACKET SEQ: "+seqNum);
-		int lengthNum = ByteBuffer.wrap(lengthBytes).getInt();
-		System.out.println("PACKET DATA LENGTH: "+lengthNum);
-		int ackNum = seqNum+lengthNum;
-		System.out.println("PACKET ACK: "+ackNum);*/
 		return Arrays.copyOfRange(bytes, 8, bytes.length);
 	}
 	
@@ -327,6 +316,21 @@ public class UDPServer {
 	public void stopVideo() {
 		VideoPlayer vPlayer = (VideoPlayer) media.get(mediaMode);
 		vPlayer.stop();
+	}
+
+
+	@Override
+	public void propertyChange(PropertyChangeEvent arg0) {
+		if(arg0.getPropertyName().equals("receive")){
+			this.sendImageData = new byte[1500];
+			this.sendData = new byte[1500];
+			try {
+				this.receive();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	
 }
