@@ -57,6 +57,7 @@ public class UDPServer implements PropertyChangeListener{
 	private DatagramPacket ackPacket;
 	
 	private ServerBuffer buffer;
+	private int interval;
 	
 	public UDPServer() throws Exception{
 		this.imageReceivingMode = false;
@@ -73,6 +74,7 @@ public class UDPServer implements PropertyChangeListener{
 		this.ackPacket=null;
 		this.rand = new Random();
 		this.buffer=new ServerBuffer(this);
+		this.buffer.addPropertyChangeListener(this);
 		this.buffer.execute();
 		/*
 		while(true) { //to remove
@@ -121,9 +123,11 @@ public class UDPServer implements PropertyChangeListener{
 			}
 		}
 		else{	
-			DatagramPacket receivePacket = this.buffer.getPacketReceived();                   			       
-			String sentence = new String(receivePacket.getData()).trim(); 
-			this.initCommand(sentence);
+			if(this.buffer.packetListSize()>0){
+				DatagramPacket receivePacket = this.buffer.getPacketReceived();                   			       
+				String sentence = new String(receivePacket.getData()).trim(); 
+				this.initCommand(sentence);
+			}
 		}
 	}
 	
@@ -219,7 +223,7 @@ public class UDPServer implements PropertyChangeListener{
 		return Arrays.copyOfRange(bytes, 8, bytes.length);
 	}
 	
-	public int reqandgetInterval() throws IOException {
+	public void reqInterval() throws IOException {
 		this.receiveData = new byte[1024];
 		this.sendData = new byte[1024];
 		
@@ -227,15 +231,6 @@ public class UDPServer implements PropertyChangeListener{
 		sendData = message.getBytes();                   
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, tempIP, port);                   		
 		serverSocket.send(sendPacket); 
-		
-		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
-		serverSocket.receive(receivePacket);  
-		String interval = new String(receivePacket.getData()).trim();
-		
-		if(interval.equals(""))
-			return 1000;
-		else
-			return Integer.parseInt(interval);
 	}
 	
 	public void initCommand(String command) throws IOException {
@@ -257,7 +252,7 @@ public class UDPServer implements PropertyChangeListener{
 			ImageViewer iViewer = (ImageViewer) media.get(mediaMode);
 			if(iViewer.getSshow() != null && iViewer.getSshow().timer.isRunning())
 				return;
-			int interval = this.reqandgetInterval();
+			reqInterval();
 			iViewer.displayIndex(0);
 			iViewer.mediaIndex = 0;
 			this.sendData();
@@ -328,6 +323,13 @@ public class UDPServer implements PropertyChangeListener{
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+		else if(arg0.getPropertyName().equals("interval")){
+			String data = new String(buffer.getPacketReceived().getData()).trim();
+			System.out.println(data);
+			data=data.substring(4);
+			System.out.println(data);
+			this.interval = Integer.parseInt(data);
 		}
 		
 	}
