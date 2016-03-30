@@ -1,5 +1,6 @@
 package com.server;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -9,7 +10,7 @@ import javax.swing.SwingWorker;
 
 import com.mp1.Global;
 
-public class ServerBuffer extends SwingWorker<Void, Void>{
+public class ServerBuffer extends Thread{
 
 	private static final int BUFFER_LIMIT = Global.BUFFERLIMIT;
 	
@@ -24,13 +25,17 @@ public class ServerBuffer extends SwingWorker<Void, Void>{
 		this.packetReceived = new LinkedList<DatagramPacket>();
 	}
 
-	
 	@Override
-	protected Void doInBackground() throws Exception {
+	public void run() {
 		while(true){	
 			this.receiveData = new byte[1508];
 			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
-			server.serverSocket.receive(receivePacket);         
+			try {
+				server.serverSocket.receive(receivePacket);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}         
 			server.tempIP = receivePacket.getAddress();                   
 			server.port = receivePacket.getPort();
 			if(server.imageReceivingMode && buffer.size()<=BUFFER_LIMIT)
@@ -38,10 +43,33 @@ public class ServerBuffer extends SwingWorker<Void, Void>{
 			else
 				packetReceived.add(receivePacket);
 				
-			firePropertyChange("receive", null, null);
+//			firePropertyChange("receive", null, null);
+			server.sendImageData = new byte[1500];
+			server.sendData = new byte[1500];
+			try {
+				server.receive();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		
 	}
+//	@Override
+//	protected Void doInBackground() throws Exception {
+//		while(true){	
+//			this.receiveData = new byte[1508];
+//			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);                   			
+//			server.serverSocket.receive(receivePacket);         
+//			server.tempIP = receivePacket.getAddress();                   
+//			server.port = receivePacket.getPort();
+//			if(server.imageReceivingMode && buffer.size()<=BUFFER_LIMIT)
+//				buffer.add(receivePacket);	
+//			else
+//				packetReceived.add(receivePacket);
+//				
+//			firePropertyChange("receive", null, null);
+//		}
+//		
+//	}
 	
 	public int getBufferSpace(){
 		return BUFFER_LIMIT-buffer.size();
