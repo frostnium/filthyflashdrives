@@ -73,7 +73,6 @@ public class UDPServer implements PropertyChangeListener{
 		this.ackPacket=null;
 		this.rand = new Random();
 		this.buffer=new ServerBuffer(this);
-		this.buffer.addPropertyChangeListener(this);
 		this.buffer.execute();
 		/*
 		while(true) { //to remove
