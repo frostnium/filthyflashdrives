@@ -1,6 +1,12 @@
 package com.client;
 
+import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import javax.swing.SwingWorker;
+
+import com.mp1.Global;
 
 public class ClientSwingWorker extends SwingWorker<Void, Void> {
 
@@ -15,27 +21,26 @@ public class ClientSwingWorker extends SwingWorker<Void, Void> {
 	@Override
 	protected Void doInBackground() throws Exception {
 		String fileName = null;
-		String ssInterval = null;
 		while(true){
 			DatagramPacket receivePacket = client.receive();
 			String data = new String(receivePacket.getData()).trim();
+			System.out.println("PACKET RECEIVED: "+receivePacket.getData().length);
 			if(data.trim().equals("GOUPLOAD")) {
-				firePropertyChange("goupload", fileName, data);
+				firePropertyChange("goupload", null, null);
 			}
 			else if(data.trim().equals("RFINT"))
-				firePropertyChange("ssInterval", ssInterval, data);
+				firePropertyChange("ssInterval", null, null);
 			else if(data.trim().substring(0, 9).equals("FILENAME:"))
 				firePropertyChange("fileName", fileName, data);
 			else if(data.trim().equals("TRCOMPLETE")) {
 				client.imageData = tempData;
 				tempData = new byte[0];
 				System.out.println("COMPLETE");
-				firePropertyChange("complete", fileName, data);
+				firePropertyChange("complete", null, null);
 			}
 			else {
 				byte[] imageDataChunk = this.parseBytes(receivePacket.getData());
 				tempData = Global.concat(tempData, imageDataChunk);
-				System.out.println("received packet length: "+tempData.length);
 			}
 		}
 		
